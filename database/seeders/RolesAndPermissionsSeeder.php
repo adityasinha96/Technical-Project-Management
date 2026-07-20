@@ -52,6 +52,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.update',
             'payments.delete',
 
+            'projects.assign-team',
+            'projects.manage-files',
+
             'expenses.view',
             'expenses.create',
             'expenses.update',
@@ -169,6 +172,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'tickets.view',
             'tickets.create',
             'tickets.update',
+
+            'projects.manage-files',
         ]);
 
         $adminName = config('admin.name');

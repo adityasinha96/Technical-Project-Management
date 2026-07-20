@@ -8,6 +8,7 @@
 >
 <head>
     <meta charset="utf-8">
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1"
@@ -106,31 +107,131 @@
                 Workspace
             </p>
 
-            <a
-                href="{{ route('dashboard') }}"
-                class="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-indigo-500/25 to-cyan-400/10 px-3 py-3 text-sm font-semibold text-white ring-1 ring-indigo-400/30"
-            >
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500 text-white shadow-lg shadow-indigo-950/40">
-                    <svg
-                        class="h-5 w-5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
+            {{-- Dashboard --}}
+            @can('dashboard.view')
+                <a
+                    href="{{ route('dashboard') }}"
+                    class="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{ request()->routeIs('dashboard')
+                            ? 'bg-gradient-to-r from-indigo-500/25 to-cyan-400/10 text-white ring-1 ring-indigo-400/30'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                >
+                    <span
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition
+                            {{ request()->routeIs('dashboard')
+                                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-950/40'
+                                : 'bg-white/5 text-slate-400' }}"
                     >
-                        <path d="M3 13h8V3H3v10zM13 21h8V11h-8v10zM3 21h8v-6H3v6zM13 9h8V3h-8v6z"/>
-                    </svg>
-                </span>
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M3 13h8V3H3v10zM13 21h8V11h-8v10zM3 21h8v-6H3v6zM13 9h8V3h-8v6z"/>
+                        </svg>
+                    </span>
 
-                <span x-show="!sidebarCollapsed">
-                    Dashboard
-                </span>
-            </a>
+                    <span
+                        x-show="!sidebarCollapsed"
+                        x-transition.opacity
+                    >
+                        Dashboard
+                    </span>
+                </a>
+            @endcan
 
+            {{-- Clients --}}
+            @can('clients.view')
+                <a
+                    href="{{ route('clients.index') }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{ request()->routeIs('clients.*')
+                            ? 'bg-white/10 text-white'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                >
+                    <span
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition
+                            {{ request()->routeIs('clients.*')
+                                ? 'bg-indigo-500/20 text-indigo-300'
+                                : 'bg-white/5 text-slate-400' }}"
+                    >
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M22 21v-2a4 4 0 00-3-3.87"/>
+                        </svg>
+                    </span>
+
+                    <span
+                        x-show="!sidebarCollapsed"
+                        x-transition.opacity
+                    >
+                        Clients
+                    </span>
+                </a>
+            @endcan
+
+            {{-- Projects --}}
+            @can('projects.view')
+                <a
+                    href="{{ route('projects.index') }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{ request()->routeIs('projects.*')
+                            ? 'bg-white/10 text-white'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                >
+                    <span
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition
+                            {{ request()->routeIs('projects.*')
+                                ? 'bg-cyan-500/20 text-cyan-300'
+                                : 'bg-white/5 text-slate-400' }}"
+                    >
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <rect
+                                x="3"
+                                y="7"
+                                width="18"
+                                height="13"
+                                rx="2"
+                            />
+
+                            <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M3 12h18"/>
+                        </svg>
+                    </span>
+
+                    <span
+                        x-show="!sidebarCollapsed"
+                        x-transition.opacity
+                    >
+                        Projects
+                    </span>
+                </a>
+            @endcan
+
+            {{-- Future modules --}}
             <div class="mt-4 space-y-1">
+                <p
+                    x-show="!sidebarCollapsed"
+                    class="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600"
+                >
+                    Upcoming Modules
+                </p>
+
                 @foreach ([
-                    ['Clients', 'Phase 2'],
-                    ['Projects', 'Phase 2'],
                     ['Tasks & Approvals', 'Phase 3'],
                     ['Payments', 'Phase 4'],
                     ['Expenses', 'Phase 5'],
@@ -148,6 +249,7 @@
 
                         <div
                             x-show="!sidebarCollapsed"
+                            x-transition.opacity
                             class="min-w-0"
                         >
                             <p class="truncate">
@@ -172,6 +274,7 @@
 
                 <div
                     x-show="!sidebarCollapsed"
+                    x-transition.opacity
                     class="min-w-0 flex-1"
                 >
                     <p class="truncate text-sm font-semibold">
@@ -304,6 +407,20 @@
             @if (session('success'))
                 <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
                     {{ session('success') }}
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    <p class="font-bold">
+                        Please correct the following errors:
+                    </p>
+
+                    <ul class="mt-2 list-inside list-disc space-y-1">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 
