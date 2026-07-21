@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             SystemSettingsSeeder::class,
             ProjectCategorySeeder::class,
+            ProjectTemplateSeeder::class,
         ]);
     }
 }

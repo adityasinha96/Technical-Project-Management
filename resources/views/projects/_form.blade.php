@@ -6,6 +6,16 @@
             ? \Illuminate\Support\Carbon::parse($date)->format('Y-m-d')
             : null;
     };
+
+    /*
+     * These statuses are controlled by the client approval workflow.
+     * They cannot be manually selected while creating or editing a project.
+     */
+    $approvalControlledStatuses = [
+        \App\Enums\ProjectStatus::FrontendApproved,
+        \App\Enums\ProjectStatus::BackendApproved,
+        \App\Enums\ProjectStatus::Completed,
+    ];
 @endphp
 
 <div class="space-y-6">
@@ -26,7 +36,9 @@
                 name="client_id"
                 required
             >
-                <option value="">Select client</option>
+                <option value="">
+                    Select client
+                </option>
 
                 @foreach ($clients as $client)
                     <option
@@ -48,7 +60,9 @@
                 label="Project Category"
                 name="project_category_id"
             >
-                <option value="">Select category</option>
+                <option value="">
+                    Select category
+                </option>
 
                 @foreach ($categories as $category)
                     <option
@@ -64,6 +78,39 @@
                     </option>
                 @endforeach
             </x-form.select>
+
+            {{-- Workflow template is available only during project creation --}}
+            @if (!$project->exists)
+                <div class="md:col-span-2">
+                    <x-form.select
+                        label="Project Workflow Template"
+                        name="project_template_id"
+                    >
+                        <option value="">
+                            Start without a task template
+                        </option>
+
+                        @foreach ($templates as $template)
+                            <option
+                                value="{{ $template->id }}"
+                                @selected(
+                                    (string) old(
+                                        'project_template_id'
+                                    ) === (string) $template->id
+                                )
+                            >
+                                {{ $template->name }}
+                                — {{ $template->tasks_count }} tasks
+                            </option>
+                        @endforeach
+                    </x-form.select>
+
+                    <p class="mt-2 text-xs leading-5 text-slate-500">
+                        Selecting a template will automatically create its
+                        predefined tasks for this project.
+                    </p>
+                </div>
+            @endif
 
             <div class="md:col-span-2">
                 <x-form.input
@@ -89,7 +136,9 @@
                 label="Project Manager"
                 name="manager_id"
             >
-                <option value="">Not assigned</option>
+                <option value="">
+                    Not assigned
+                </option>
 
                 @foreach ($users as $user)
                     <option
@@ -127,12 +176,42 @@
                 @endforeach
             </x-form.select>
 
+            {{-- Approval-controlled statuses cannot be selected manually --}}
             <x-form.select
                 label="Project Status"
                 name="status"
                 required
             >
                 @foreach ($statuses as $status)
+                    {{--
+                        While creating a project, never display approval-controlled
+                        statuses such as Frontend Approved, Backend Approved
+                        or Completed.
+                    --}}
+                    @continue(
+                        !$project->exists &&
+                        in_array(
+                            $status,
+                            $approvalControlledStatuses,
+                            true
+                        )
+                    )
+
+                    {{--
+                        While editing, only show a protected status when the
+                        project already has that exact status. This prevents
+                        manually moving a project into an approved state.
+                    --}}
+                    @continue(
+                        $project->exists &&
+                        in_array(
+                            $status,
+                            $approvalControlledStatuses,
+                            true
+                        ) &&
+                        $project->status !== $status
+                    )
+
                     <option
                         value="{{ $status->value }}"
                         @selected(
@@ -175,6 +254,7 @@
             x-data="{
                 price: Number('{{ old('project_price', $project->project_price ?: 0) }}') || 0,
                 cost: Number('{{ old('estimated_cost', $project->estimated_cost ?: 0) }}') || 0,
+
                 format(value) {
                     return new Intl.NumberFormat('en-IN', {
                         style: 'currency',
@@ -213,8 +293,10 @@
                 <option
                     value="INR"
                     @selected(
-                        old('currency', $project->currency ?: 'INR')
-                            === 'INR'
+                        old(
+                            'currency',
+                            $project->currency ?: 'INR'
+                        ) === 'INR'
                     )
                 >
                     INR — Indian Rupee
@@ -418,7 +500,7 @@
     <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <a
             href="{{ route('projects.index') }}"
-            class="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700"
+            class="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
         >
             Cancel
         </a>

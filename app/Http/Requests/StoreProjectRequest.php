@@ -54,6 +54,12 @@ class StoreProjectRequest extends FormRequest
                     ),
             ],
 
+            'project_template_id' => [
+                'nullable',
+                Rule::exists('project_templates', 'id')
+                    ->where('is_active', true),
+            ],
+
             'name' => [
                 'required',
                 'string',

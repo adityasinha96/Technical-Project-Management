@@ -7,6 +7,10 @@ use App\Enums\ProjectStatus;
 use App\Models\Client;
 use App\Models\Project;
 use Illuminate\Contracts\View\View;
+use App\Enums\ApprovalStatus;
+use App\Enums\TaskStatus;
+use App\Models\ProjectApproval;
+use App\Models\ProjectTask;
 
 class DashboardController extends Controller
 {
@@ -48,6 +52,31 @@ class DashboardController extends Controller
                     'COALESCE(SUM(project_price - estimated_cost), 0) AS total'
                 )
                 ->value('total') ?? 0,
+            
+            'pending_approvals' => ProjectApproval::query()
+                ->where(
+                    'status',
+                    ApprovalStatus::Submitted->value
+                )
+                ->count(),
+
+            'overdue_tasks' => ProjectTask::query()
+                ->whereNotIn(
+                    'status',
+                    [
+                        TaskStatus::Completed->value,
+                        TaskStatus::Cancelled->value,
+                    ]
+                )
+                ->whereDate('due_date', '<', today())
+                ->count(),
+
+            'blocked_tasks' => ProjectTask::query()
+                ->where(
+                    'status',
+                    TaskStatus::Blocked->value
+                )
+                ->count(),
         ];
 
         $delayedProjects = Project::query()

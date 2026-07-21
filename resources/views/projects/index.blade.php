@@ -5,6 +5,7 @@
 
 @section('content')
     <div class="space-y-6">
+        {{-- Page heading --}}
         <section class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h2 class="text-2xl font-black text-slate-950">
@@ -12,7 +13,7 @@
                 </h2>
 
                 <p class="mt-1 text-sm text-slate-500">
-                    Track projects, deadlines, pricing and team assignments.
+                    Track projects, deadlines, pricing, progress and team assignments.
                 </p>
             </div>
 
@@ -26,6 +27,7 @@
             @endcan
         </section>
 
+        {{-- Project summary cards --}}
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             @foreach ([
                 ['Total Projects', $summary['total_projects']],
@@ -35,7 +37,7 @@
                 [
                     'Contracted Value',
                     '₹' . number_format(
-                        $summary['contracted_value'],
+                        (float) $summary['contracted_value'],
                         2
                     )
                 ],
@@ -52,6 +54,7 @@
             @endforeach
         </section>
 
+        {{-- Project filters --}}
         <section
             x-data="{ filtersOpen: false }"
             class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
@@ -64,7 +67,7 @@
                 <button
                     type="button"
                     @click="filtersOpen = !filtersOpen"
-                    class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold"
+                    class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold transition hover:bg-slate-50"
                 >
                     Show / Hide
                 </button>
@@ -80,14 +83,16 @@
                     name="search"
                     value="{{ request('search') }}"
                     placeholder="Search project or client..."
-                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                 >
 
                 <select
                     name="status"
-                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm"
+                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                 >
-                    <option value="">All statuses</option>
+                    <option value="">
+                        All statuses
+                    </option>
 
                     @foreach ($statuses as $status)
                         <option
@@ -103,9 +108,11 @@
 
                 <select
                     name="priority"
-                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm"
+                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                 >
-                    <option value="">All priorities</option>
+                    <option value="">
+                        All priorities
+                    </option>
 
                     @foreach ($priorities as $priority)
                         <option
@@ -121,15 +128,19 @@
 
                 <select
                     name="deadline"
-                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm"
+                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                 >
-                    <option value="">All deadlines</option>
+                    <option value="">
+                        All deadlines
+                    </option>
+
                     <option
                         value="delayed"
                         @selected(request('deadline') === 'delayed')
                     >
                         Delayed Projects
                     </option>
+
                     <option
                         value="due_soon"
                         @selected(request('deadline') === 'due_soon')
@@ -140,16 +151,18 @@
 
                 <select
                     name="client_id"
-                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm"
+                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                 >
-                    <option value="">All clients</option>
+                    <option value="">
+                        All clients
+                    </option>
 
                     @foreach ($clients as $client)
                         <option
                             value="{{ $client->id }}"
                             @selected(
                                 (string) request('client_id')
-                                === (string) $client->id
+                                    === (string) $client->id
                             )
                         >
                             {{ $client->display_name }}
@@ -159,16 +172,18 @@
 
                 <select
                     name="category_id"
-                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm"
+                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                 >
-                    <option value="">All categories</option>
+                    <option value="">
+                        All categories
+                    </option>
 
                     @foreach ($categories as $category)
                         <option
                             value="{{ $category->id }}"
                             @selected(
                                 (string) request('category_id')
-                                === (string) $category->id
+                                    === (string) $category->id
                             )
                         >
                             {{ $category->name }}
@@ -178,16 +193,18 @@
 
                 <select
                     name="manager_id"
-                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm"
+                    class="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                 >
-                    <option value="">All managers</option>
+                    <option value="">
+                        All managers
+                    </option>
 
                     @foreach ($managers as $manager)
                         <option
                             value="{{ $manager->id }}"
                             @selected(
                                 (string) request('manager_id')
-                                === (string) $manager->id
+                                    === (string) $manager->id
                             )
                         >
                             {{ $manager->name }}
@@ -196,13 +213,16 @@
                 </select>
 
                 <div class="flex gap-2">
-                    <button class="min-h-12 flex-1 rounded-2xl bg-indigo-600 px-5 text-sm font-bold text-white">
+                    <button
+                        type="submit"
+                        class="min-h-12 flex-1 rounded-2xl bg-indigo-600 px-5 text-sm font-bold text-white transition hover:bg-indigo-700"
+                    >
                         Filter
                     </button>
 
                     <a
                         href="{{ route('projects.index') }}"
-                        class="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-bold text-slate-600"
+                        class="inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
                     >
                         Reset
                     </a>
@@ -210,11 +230,13 @@
             </form>
         </section>
 
+        {{-- Project list --}}
         <section class="grid gap-4">
             @forelse ($projects as $project)
                 <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-200 hover:shadow-md sm:p-6">
                     <div class="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                         <div class="min-w-0 flex-1">
+                            {{-- Status badges --}}
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset {{ $project->status->badgeClasses() }}">
                                     {{ $project->status->label() }}
@@ -231,21 +253,24 @@
                                 @endif
                             </div>
 
+                            {{-- Project name --}}
                             <a
                                 href="{{ route('projects.show', $project) }}"
-                                class="mt-3 block text-xl font-black text-slate-950 hover:text-indigo-600"
+                                class="mt-3 block text-xl font-black text-slate-950 transition hover:text-indigo-600"
                             >
                                 {{ $project->name }}
                             </a>
 
+                            {{-- Project metadata --}}
                             <p class="mt-1 text-sm text-slate-500">
                                 {{ $project->project_code }}
                                 ·
-                                {{ $project->client->display_name }}
+                                {{ $project->client?->display_name ?? 'No client assigned' }}
                                 ·
                                 {{ $project->category?->name ?? 'Uncategorised' }}
                             </p>
 
+                            {{-- Project information --}}
                             <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 @can('payments.view')
                                     <div>
@@ -255,7 +280,7 @@
 
                                         <p class="mt-1 font-bold text-slate-900">
                                             ₹{{ number_format(
-                                                $project->project_price,
+                                                (float) $project->project_price,
                                                 2
                                             ) }}
                                         </p>
@@ -268,7 +293,7 @@
                                     </p>
 
                                     <p class="mt-1 font-bold text-slate-900">
-                                        {{ $project->deadline?->format('d M Y') }}
+                                        {{ $project->deadline?->format('d M Y') ?? 'Not provided' }}
                                     </p>
 
                                     <p class="mt-1 text-xs font-semibold {{ $project->is_delayed ? 'text-red-600' : 'text-slate-500' }}">
@@ -298,31 +323,51 @@
                             </div>
                         </div>
 
-                        <div class="w-full rounded-2xl bg-slate-50 p-4 xl:w-60">
-                            <div class="flex items-center justify-between">
-                                <p class="text-xs font-bold uppercase tracking-wider text-slate-500">
-                                    Official Progress
-                                </p>
+                        {{-- Internal and official progress --}}
+                        <div class="w-full space-y-4 rounded-2xl bg-slate-50 p-4 xl:w-64">
+                            {{-- Internal task-based progress --}}
+                            <div>
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                        Internal Progress
+                                    </p>
 
-                                <p class="font-black text-slate-900">
-                                    {{ $project->official_progress }}%
-                                </p>
+                                    <p class="shrink-0 font-black text-slate-900">
+                                        {{ $project->internal_progress }}%
+                                    </p>
+                                </div>
+
+                                <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
+                                    <div
+                                        class="h-full rounded-full bg-indigo-600 transition-all duration-500"
+                                        style="width: {{ min(100, max(0, $project->internal_progress)) }}%"
+                                    ></div>
+                                </div>
                             </div>
 
-                            <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
-                                <div
-                                    class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400"
-                                    style="width: {{ $project->official_progress }}%"
-                                ></div>
-                            </div>
+                            {{-- Official approval-based progress --}}
+                            <div>
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                        Official Progress
+                                    </p>
 
-                            <p class="mt-3 text-xs leading-5 text-slate-500">
-                                Controlled by client approvals from Phase 3.
-                            </p>
+                                    <p class="shrink-0 font-black text-slate-900">
+                                        {{ $project->official_progress }}%
+                                    </p>
+                                </div>
+
+                                <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
+                                    <div
+                                        class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500"
+                                        style="width: {{ min(100, max(0, $project->official_progress)) }}%"
+                                    ></div>
+                                </div>
+                            </div>
 
                             <a
                                 href="{{ route('projects.show', $project) }}"
-                                class="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-bold text-white"
+                                class="inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-indigo-600"
                             >
                                 Open Project
                             </a>
@@ -338,10 +383,20 @@
                     <p class="mt-1 text-sm text-slate-500">
                         Add a project or change the selected filters.
                     </p>
+
+                    @can('projects.create')
+                        <a
+                            href="{{ route('projects.create') }}"
+                            class="mt-5 inline-flex min-h-11 items-center justify-center rounded-2xl bg-slate-950 px-5 text-sm font-bold text-white transition hover:bg-indigo-600"
+                        >
+                            Add First Project
+                        </a>
+                    @endcan
                 </div>
             @endforelse
         </section>
 
+        {{-- Pagination --}}
         @if ($projects->hasPages())
             <div>
                 {{ $projects->links() }}

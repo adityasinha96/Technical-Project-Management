@@ -14,51 +14,125 @@ class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Clear Permission Cache
+        |--------------------------------------------------------------------------
+        */
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Application Permissions
+        |--------------------------------------------------------------------------
+        */
 
         $permissions = [
             'dashboard.view',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Users
+            |--------------------------------------------------------------------------
+            */
 
             'users.view',
             'users.create',
             'users.update',
             'users.delete',
 
+            /*
+            |--------------------------------------------------------------------------
+            | Clients
+            |--------------------------------------------------------------------------
+            */
+
             'clients.view',
             'clients.create',
             'clients.update',
             'clients.delete',
 
+            /*
+            |--------------------------------------------------------------------------
+            | Projects
+            |--------------------------------------------------------------------------
+            */
+
             'projects.view',
             'projects.create',
             'projects.update',
             'projects.delete',
+            'projects.assign-team',
+            'projects.manage-files',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Task Templates
+            |--------------------------------------------------------------------------
+            */
+
+            'templates.view',
+            'templates.manage',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Tasks
+            |--------------------------------------------------------------------------
+            */
 
             'tasks.view',
             'tasks.create',
             'tasks.update',
             'tasks.delete',
 
+            /*
+            |--------------------------------------------------------------------------
+            | Approvals
+            |--------------------------------------------------------------------------
+            */
+
             'approvals.view',
             'approvals.manage',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Notes
+            |--------------------------------------------------------------------------
+            */
 
             'notes.view',
             'notes.create',
             'notes.update',
             'notes.delete',
 
+            /*
+            |--------------------------------------------------------------------------
+            | Payments
+            |--------------------------------------------------------------------------
+            */
+
             'payments.view',
             'payments.create',
             'payments.update',
             'payments.delete',
 
-            'projects.assign-team',
-            'projects.manage-files',
+            /*
+            |--------------------------------------------------------------------------
+            | Expenses
+            |--------------------------------------------------------------------------
+            */
 
             'expenses.view',
             'expenses.create',
             'expenses.update',
             'expenses.delete',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Tickets
+            |--------------------------------------------------------------------------
+            */
 
             'tickets.view',
             'tickets.create',
@@ -67,11 +141,29 @@ class RolesAndPermissionsSeeder extends Seeder
             'tickets.close',
             'tickets.delete',
 
+            /*
+            |--------------------------------------------------------------------------
+            | Reports
+            |--------------------------------------------------------------------------
+            */
+
             'reports.view',
             'reports.export',
 
+            /*
+            |--------------------------------------------------------------------------
+            | Settings
+            |--------------------------------------------------------------------------
+            */
+
             'settings.manage',
         ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create Permissions
+        |--------------------------------------------------------------------------
+        */
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate([
@@ -79,6 +171,12 @@ class RolesAndPermissionsSeeder extends Seeder
                 'guard_name' => 'web',
             ]);
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create Roles
+        |--------------------------------------------------------------------------
+        */
 
         $superAdmin = Role::firstOrCreate([
             'name' => 'super-admin',
@@ -100,7 +198,19 @@ class RolesAndPermissionsSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Super Administrator Permissions
+        |--------------------------------------------------------------------------
+        */
+
         $superAdmin->syncPermissions($permissions);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Manager Permissions
+        |--------------------------------------------------------------------------
+        */
 
         $projectManager->syncPermissions([
             'dashboard.view',
@@ -112,6 +222,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'projects.view',
             'projects.create',
             'projects.update',
+            'projects.assign-team',
+            'projects.manage-files',
+
+            'templates.view',
+            'templates.manage',
 
             'tasks.view',
             'tasks.create',
@@ -127,6 +242,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'notes.delete',
 
             'payments.view',
+
             'expenses.view',
 
             'tickets.view',
@@ -138,10 +254,17 @@ class RolesAndPermissionsSeeder extends Seeder
             'reports.view',
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Accounts Permissions
+        |--------------------------------------------------------------------------
+        */
+
         $accounts->syncPermissions([
             'dashboard.view',
 
             'clients.view',
+
             'projects.view',
 
             'payments.view',
@@ -158,12 +281,25 @@ class RolesAndPermissionsSeeder extends Seeder
             'reports.export',
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Team Member Permissions
+        |--------------------------------------------------------------------------
+        */
+
         $teamMember->syncPermissions([
             'dashboard.view',
+
             'projects.view',
+            'projects.manage-files',
+
+            'templates.view',
 
             'tasks.view',
+            'tasks.create',
             'tasks.update',
+
+            'approvals.view',
 
             'notes.view',
             'notes.create',
@@ -172,9 +308,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'tickets.view',
             'tickets.create',
             'tickets.update',
-
-            'projects.manage-files',
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create or Update Super Administrator
+        |--------------------------------------------------------------------------
+        */
 
         $adminName = config('admin.name');
         $adminEmail = config('admin.email');
@@ -187,7 +327,9 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         $user = User::updateOrCreate(
-            ['email' => $adminEmail],
+            [
+                'email' => $adminEmail,
+            ],
             [
                 'name' => $adminName,
                 'password' => Hash::make($adminPassword),
@@ -196,7 +338,15 @@ class RolesAndPermissionsSeeder extends Seeder
             ]
         );
 
-        $user->syncRoles([$superAdmin]);
+        $user->syncRoles([
+            $superAdmin,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Clear Permission Cache Again
+        |--------------------------------------------------------------------------
+        */
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ApprovalStage;
+use App\Enums\ApprovalStatus;
 use App\Enums\ProjectPriority;
 use App\Enums\ProjectStatus;
+use App\Enums\TaskPhase;
+use App\Enums\TaskStatus;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Client;
 use App\Models\Project;
 use App\Models\ProjectCategory;
+use App\Models\ProjectTemplate;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Services\Projects\ProjectTemplateService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +25,11 @@ use Illuminate\Support\Facades\DB;
 
 class ProjectController extends Controller
 {
+    public function __construct(
+        private readonly ProjectTemplateService $templateService
+    ) {
+    }
+
     public function index(Request $request): View
     {
         $dueSoonDays = (int) (
@@ -39,70 +50,73 @@ class ProjectController extends Controller
             ->when(
                 $request->filled('status'),
                 fn ($query) =>
-                $query->where('status', $request->string('status'))
+                    $query->where(
+                        'status',
+                        $request->string('status')->toString()
+                    )
             )
 
             ->when(
                 $request->filled('priority'),
                 fn ($query) =>
-                $query->where(
-                    'priority',
-                    $request->string('priority')
-                )
+                    $query->where(
+                        'priority',
+                        $request->string('priority')->toString()
+                    )
             )
 
             ->when(
                 $request->filled('client_id'),
                 fn ($query) =>
-                $query->where(
-                    'client_id',
-                    $request->integer('client_id')
-                )
+                    $query->where(
+                        'client_id',
+                        $request->integer('client_id')
+                    )
             )
 
             ->when(
                 $request->filled('category_id'),
                 fn ($query) =>
-                $query->where(
-                    'project_category_id',
-                    $request->integer('category_id')
-                )
+                    $query->where(
+                        'project_category_id',
+                        $request->integer('category_id')
+                    )
             )
 
             ->when(
                 $request->filled('manager_id'),
                 fn ($query) =>
-                $query->where(
-                    'manager_id',
-                    $request->integer('manager_id')
-                )
+                    $query->where(
+                        'manager_id',
+                        $request->integer('manager_id')
+                    )
             )
 
             ->when(
                 $request->string('deadline')->toString() === 'delayed',
                 fn ($query) =>
-                $query
-                    ->open()
-                    ->whereRaw(
-                        'COALESCE(revised_delivery_date, expected_delivery_date) < ?',
-                        [today()->toDateString()]
-                    )
+                    $query
+                        ->open()
+                        ->whereRaw(
+                            'COALESCE(revised_delivery_date, expected_delivery_date) < ?',
+                            [today()->toDateString()]
+                        )
             )
 
             ->when(
                 $request->string('deadline')->toString() === 'due_soon',
                 fn ($query) =>
-                $query
-                    ->open()
-                    ->whereRaw(
-                        'COALESCE(revised_delivery_date, expected_delivery_date) BETWEEN ? AND ?',
-                        [
-                            today()->toDateString(),
-                            today()
-                                ->addDays($dueSoonDays)
-                                ->toDateString(),
-                        ]
-                    )
+                    $query
+                        ->open()
+                        ->whereRaw(
+                            'COALESCE(revised_delivery_date, expected_delivery_date) BETWEEN ? AND ?',
+                            [
+                                today()->toDateString(),
+                                today()
+                                    ->addDays($dueSoonDays)
+                                    ->toDateString(),
+                            ]
+                        )
             )
 
             ->orderByRaw(
@@ -194,9 +208,15 @@ class ProjectController extends Controller
 
         $teamIds = $validated['team_member_ids'] ?? [];
 
+        $templateId =
+            $validated['project_template_id'] ?? null;
+
         $projectData = Arr::except(
             $validated,
-            ['team_member_ids']
+            [
+                'team_member_ids',
+                'project_template_id',
+            ]
         );
 
         $project = DB::transaction(
@@ -231,9 +251,26 @@ class ProjectController extends Controller
             }
         );
 
+        if ($templateId) {
+            $template = ProjectTemplate::query()
+                ->active()
+                ->findOrFail($templateId);
+
+            $this->templateService->apply(
+                project: $project,
+                template: $template,
+                createdBy: $request->user()->id
+            );
+        }
+
         return redirect()
             ->route('projects.show', $project)
-            ->with('success', 'Project created successfully.');
+            ->with(
+                'success',
+                $templateId
+                    ? 'Project created and template applied successfully.'
+                    : 'Project created successfully.'
+            );
     }
 
     public function show(Project $project): View
@@ -241,8 +278,17 @@ class ProjectController extends Controller
         $project->load([
             'client',
             'category',
+            'template',
             'manager',
             'team',
+
+            'tasks.assignee',
+            'tasks.createdBy',
+
+            'approvals.submittedBy',
+            'approvals.reviewedBy',
+            'approvals.proofFile',
+
             'files.uploadedBy',
             'createdBy',
             'updatedBy',
@@ -255,20 +301,37 @@ class ProjectController extends Controller
                 ->where('status', 'active')
                 ->orderBy('name')
                 ->get(),
+
+            'availableTemplates' => ProjectTemplate::query()
+                ->active()
+                ->withCount('tasks')
+                ->get(),
+
+            'taskPhases' => TaskPhase::cases(),
+            'taskStatuses' => TaskStatus::cases(),
+            'priorities' => ProjectPriority::cases(),
+
+            'approvalStages' => ApprovalStage::cases(),
+            'approvalStatuses' => ApprovalStatus::cases(),
         ]);
     }
 
     public function edit(Project $project): View
     {
-        $project->load('team');
+        $project->load([
+            'team',
+            'template',
+        ]);
 
         return view('projects.edit', [
             ...$this->formData(),
+
             'project' => $project,
+
             'selectedTeam' => $project
                 ->team
                 ->pluck('id')
-                ->map(fn ($id) => (int) $id)
+                ->map(fn ($id): int => (int) $id)
                 ->all(),
         ]);
     }
@@ -281,9 +344,18 @@ class ProjectController extends Controller
 
         $teamIds = $validated['team_member_ids'] ?? [];
 
+        /*
+         * The selected template is intentionally excluded.
+         *
+         * Editing general project information must not reapply a template
+         * or replace the project's existing tasks.
+         */
         $projectData = Arr::except(
             $validated,
-            ['team_member_ids']
+            [
+                'team_member_ids',
+                'project_template_id',
+            ]
         );
 
         DB::transaction(
@@ -340,6 +412,11 @@ class ProjectController extends Controller
                 ->orderBy('name')
                 ->get(),
 
+            'templates' => ProjectTemplate::query()
+                ->active()
+                ->withCount('tasks')
+                ->get(),
+
             'statuses' => ProjectStatus::cases(),
             'priorities' => ProjectPriority::cases(),
         ];
@@ -353,7 +430,7 @@ class ProjectController extends Controller
     ): void {
         $memberIds = collect($teamIds)
             ->filter()
-            ->map(fn ($id) => (int) $id);
+            ->map(fn ($id): int => (int) $id);
 
         if ($managerId) {
             $memberIds->push($managerId);

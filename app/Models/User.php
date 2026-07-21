@@ -73,4 +73,28 @@ class User extends Authenticatable implements MustVerifyEmail
             'uploaded_by'
         );
     }
+
+    public function assignedTasks(): HasMany
+{
+    return $this->hasMany(
+        ProjectTask::class,
+        'assigned_to'
+    );
+}
+
+    public function submittedApprovals(): HasMany
+    {
+        return $this->hasMany(
+            ProjectApproval::class,
+            'submitted_by'
+        );
+    }
+
+    public function reviewedApprovals(): HasMany
+    {
+        return $this->hasMany(
+            ProjectApproval::class,
+            'reviewed_by'
+        );
+    }
 }

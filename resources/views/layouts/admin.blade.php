@@ -222,6 +222,43 @@
                 </a>
             @endcan
 
+            {{-- Project Templates --}}
+            @can('templates.view')
+                <a
+                    href="{{ route('project-templates.index') }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{ request()->routeIs('project-templates.*')
+                            ? 'bg-white/10 text-white'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                >
+                    <span
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition
+                            {{ request()->routeIs('project-templates.*')
+                                ? 'bg-violet-500/20 text-violet-300'
+                                : 'bg-white/5 text-slate-400' }}"
+                    >
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M4 4h16v4H4z"/>
+                            <path d="M4 10h16v10H4z"/>
+                            <path d="M8 14h8M8 17h5"/>
+                        </svg>
+                    </span>
+
+                    <span
+                        x-show="!sidebarCollapsed"
+                        x-transition.opacity
+                    >
+                        Project Templates
+                    </span>
+                </a>
+            @endcan
+
             {{-- Future modules --}}
             <div class="mt-4 space-y-1">
                 <p

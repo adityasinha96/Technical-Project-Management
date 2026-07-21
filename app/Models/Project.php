@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enums\ApprovalStage;
+use App\Enums\ApprovalStatus;
 
 class Project extends Model
 {
@@ -46,6 +48,8 @@ class Project extends Model
         'domain_expiry_date',
         'hosting_expiry_date',
         'internal_remarks',
+        'project_template_id',
+        'internal_progress',
         'created_by',
         'updated_by',
     ];
@@ -68,6 +72,8 @@ class Project extends Model
 
             'official_progress' => 'integer',
             'maximum_duration_days' => 'integer',
+
+            'internal_progress' => 'integer',
         ];
     }
 
@@ -242,5 +248,81 @@ class Project extends Model
             'status',
             ProjectStatus::closedValues()
         );
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(
+            ProjectTemplate::class,
+            'project_template_id'
+        );
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this
+            ->hasMany(ProjectTask::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
+    public function approvals(): HasMany
+    {
+        return $this
+            ->hasMany(ProjectApproval::class)
+            ->latest('submitted_at');
+    }
+
+    public function hasApprovedStage(
+    ApprovalStage $stage
+    ): bool {
+        if ($this->relationLoaded('approvals')) {
+            return $this->approvals->contains(
+                fn (ProjectApproval $approval): bool =>
+                    $approval->stage === $stage &&
+                    $approval->status === ApprovalStatus::Approved
+            );
+        }
+
+        return $this
+            ->approvals()
+            ->where('stage', $stage->value)
+            ->where('status', ApprovalStatus::Approved->value)
+            ->exists();
+    }
+
+    public function hasPendingApproval(
+        ApprovalStage $stage
+    ): bool {
+        if ($this->relationLoaded('approvals')) {
+            return $this->approvals->contains(
+                fn (ProjectApproval $approval): bool =>
+                    $approval->stage === $stage &&
+                    $approval->status === ApprovalStatus::Submitted
+            );
+        }
+
+        return $this
+            ->approvals()
+            ->where('stage', $stage->value)
+            ->where('status', ApprovalStatus::Submitted->value)
+            ->exists();
+    }
+
+    public function latestApproval(
+        ApprovalStage $stage
+    ): ?ProjectApproval {
+        if ($this->relationLoaded('approvals')) {
+            return $this->approvals
+                ->where('stage', $stage)
+                ->sortByDesc('submitted_at')
+                ->first();
+        }
+
+        return $this
+            ->approvals()
+            ->where('stage', $stage->value)
+            ->latest('submitted_at')
+            ->first();
     }
 }

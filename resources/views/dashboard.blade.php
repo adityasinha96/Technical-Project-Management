@@ -24,8 +24,8 @@
 
                     <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
                         Monitor clients, active projects, delivery deadlines,
-                        project values and estimated profitability from one
-                        central workspace.
+                        project values, task progress, approvals and estimated
+                        profitability from one central workspace.
                     </p>
 
                     <div class="mt-6 flex flex-wrap gap-3">
@@ -95,7 +95,14 @@
                                 stroke="currentColor"
                                 stroke-width="1.8"
                             >
-                                <rect x="3" y="7" width="18" height="13" rx="2"/>
+                                <rect
+                                    x="3"
+                                    y="7"
+                                    width="18"
+                                    height="13"
+                                    rx="2"
+                                />
+
                                 <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M3 12h18"/>
                             </svg>
                         </div>
@@ -142,7 +149,8 @@
                         </p>
 
                         <p class="mt-2 text-xs font-semibold text-emerald-600">
-                            {{ number_format($stats['active_clients']) }} active clients
+                            {{ number_format($stats['active_clients']) }}
+                            active clients
                         </p>
                     </div>
 
@@ -175,7 +183,8 @@
                         </p>
 
                         <p class="mt-2 text-xs font-semibold text-slate-500">
-                            {{ number_format($stats['total_projects']) }} total projects
+                            {{ number_format($stats['total_projects']) }}
+                            total projects
                         </p>
                     </div>
 
@@ -187,7 +196,14 @@
                             stroke="currentColor"
                             stroke-width="1.8"
                         >
-                            <rect x="3" y="7" width="18" height="13" rx="2"/>
+                            <rect
+                                x="3"
+                                y="7"
+                                width="18"
+                                height="13"
+                                rx="2"
+                            />
+
                             <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M3 12h18"/>
                         </svg>
                     </div>
@@ -235,7 +251,10 @@
                         </p>
 
                         <p class="mt-2 break-words text-2xl font-black text-slate-950 sm:text-3xl">
-                            ₹{{ number_format((float) $stats['total_project_value'], 2) }}
+                            ₹{{ number_format(
+                                (float) $stats['total_project_value'],
+                                2
+                            ) }}
                         </p>
 
                         <p class="mt-2 text-xs font-semibold text-slate-500">
@@ -258,9 +277,111 @@
             </article>
         </section>
 
+        {{-- Phase 3 task and approval statistics --}}
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+
+            {{-- Pending approvals --}}
+            <article class="rounded-3xl border border-cyan-200 bg-cyan-50 p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-medium text-cyan-700">
+                            Pending Approvals
+                        </p>
+
+                        <p class="mt-2 text-3xl font-black text-cyan-950">
+                            {{ number_format($stats['pending_approvals']) }}
+                        </p>
+
+                        <p class="mt-2 text-xs font-semibold text-cyan-700">
+                            Awaiting approval workflow action
+                        </p>
+                    </div>
+
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700">
+                        <svg
+                            class="h-6 w-6"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <circle cx="12" cy="12" r="9"/>
+                            <path d="M12 7v5l3 2"/>
+                        </svg>
+                    </div>
+                </div>
+            </article>
+
+            {{-- Overdue tasks --}}
+            <article class="rounded-3xl border border-red-200 bg-red-50 p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-medium text-red-700">
+                            Overdue Tasks
+                        </p>
+
+                        <p class="mt-2 text-3xl font-black text-red-950">
+                            {{ number_format($stats['overdue_tasks']) }}
+                        </p>
+
+                        <p class="mt-2 text-xs font-semibold text-red-700">
+                            Tasks beyond their due dates
+                        </p>
+                    </div>
+
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-700">
+                        <svg
+                            class="h-6 w-6"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M12 8v5"/>
+                            <path d="M12 17h.01"/>
+                            <path d="M10.3 3.8L2.7 17a2 2 0 001.7 3h15.2a2 2 0 001.7-3L13.7 3.8a2 2 0 00-3.4 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </article>
+
+            {{-- Blocked tasks --}}
+            <article class="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm sm:col-span-2 xl:col-span-1">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-medium text-amber-700">
+                            Blocked Tasks
+                        </p>
+
+                        <p class="mt-2 text-3xl font-black text-amber-950">
+                            {{ number_format($stats['blocked_tasks']) }}
+                        </p>
+
+                        <p class="mt-2 text-xs font-semibold text-amber-700">
+                            Tasks waiting on blockers
+                        </p>
+                    </div>
+
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                        <svg
+                            class="h-6 w-6"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <circle cx="12" cy="12" r="9"/>
+                            <path d="M6.5 6.5l11 11"/>
+                        </svg>
+                    </div>
+                </div>
+            </article>
+        </section>
+
         {{-- Financial and completion summary --}}
         <section class="grid gap-4 sm:grid-cols-2">
 
+            {{-- Estimated profit --}}
             <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <div class="flex items-center justify-between gap-4">
                     <div>
@@ -269,7 +390,10 @@
                         </p>
 
                         <p class="mt-2 text-2xl font-black text-emerald-700 sm:text-3xl">
-                            ₹{{ number_format((float) $stats['estimated_profit'], 2) }}
+                            ₹{{ number_format(
+                                (float) $stats['estimated_profit'],
+                                2
+                            ) }}
                         </p>
 
                         <p class="mt-2 text-xs text-slate-500">
@@ -292,6 +416,7 @@
                 </div>
             </article>
 
+            {{-- Completed projects --}}
             <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <div class="flex items-center justify-between gap-4">
                     <div>
@@ -363,6 +488,7 @@
 
                                     <p class="mt-2 text-xs text-slate-400">
                                         Manager:
+
                                         <span class="font-semibold text-slate-600">
                                             {{ $project->manager?->name ?? 'Not assigned' }}
                                         </span>
@@ -441,6 +567,7 @@
 
                                     <p class="mt-2 text-xs text-slate-400">
                                         Manager:
+
                                         <span class="font-semibold text-slate-600">
                                             {{ $project->manager?->name ?? 'Not assigned' }}
                                         </span>
@@ -462,7 +589,14 @@
                                     stroke="currentColor"
                                     stroke-width="1.8"
                                 >
-                                    <rect x="3" y="7" width="18" height="13" rx="2"/>
+                                    <rect
+                                        x="3"
+                                        y="7"
+                                        width="18"
+                                        height="13"
+                                        rx="2"
+                                    />
+
                                     <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/>
                                 </svg>
                             </div>
@@ -544,7 +678,7 @@
 
                             <p class="mt-2 text-sm leading-6 text-slate-500">
                                 Monitor project pricing, deadlines, teams,
-                                files and delivery status.
+                                tasks, approvals, files and delivery status.
                             </p>
                         </div>
 
