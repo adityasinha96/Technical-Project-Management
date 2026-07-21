@@ -111,6 +111,14 @@ class ClientController extends Controller
                 ->projects()
                 ->sum('project_price'),
 
+            'received_amount' => $client
+                ->projects()
+                ->sum('net_received_amount'),
+
+            'pending_amount' => $client
+                ->projects()
+                ->sum('pending_amount'),
+
             'estimated_cost' => $client
                 ->projects()
                 ->sum('estimated_cost'),

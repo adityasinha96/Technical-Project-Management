@@ -20,7 +20,8 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        app(PermissionRegistrar::class)
+            ->forgetCachedPermissions();
 
         /*
         |--------------------------------------------------------------------------
@@ -29,6 +30,12 @@ class RolesAndPermissionsSeeder extends Seeder
         */
 
         $permissions = [
+            /*
+            |--------------------------------------------------------------------------
+            | Dashboard
+            |--------------------------------------------------------------------------
+            */
+
             'dashboard.view',
 
             /*
@@ -68,7 +75,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
-            | Task Templates
+            | Project Templates
             |--------------------------------------------------------------------------
             */
 
@@ -77,7 +84,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
-            | Tasks
+            | Project Tasks
             |--------------------------------------------------------------------------
             */
 
@@ -88,7 +95,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
-            | Approvals
+            | Project Approvals
             |--------------------------------------------------------------------------
             */
 
@@ -97,7 +104,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
-            | Notes
+            | Project Notes
             |--------------------------------------------------------------------------
             */
 
@@ -108,7 +115,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
-            | Payments
+            | Project Payments
             |--------------------------------------------------------------------------
             */
 
@@ -116,6 +123,17 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.create',
             'payments.update',
             'payments.delete',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment Follow-ups
+            |--------------------------------------------------------------------------
+            */
+
+            'payment-followups.view',
+            'payment-followups.create',
+            'payment-followups.update',
+            'payment-followups.delete',
 
             /*
             |--------------------------------------------------------------------------
@@ -161,7 +179,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
-        | Create Permissions
+        | Create or Update Permissions
         |--------------------------------------------------------------------------
         */
 
@@ -174,7 +192,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
-        | Create Roles
+        | Create or Retrieve Roles
         |--------------------------------------------------------------------------
         */
 
@@ -202,6 +220,9 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         | Super Administrator Permissions
         |--------------------------------------------------------------------------
+        |
+        | Super administrators receive every application permission.
+        |
         */
 
         $superAdmin->syncPermissions($permissions);
@@ -210,6 +231,11 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         | Project Manager Permissions
         |--------------------------------------------------------------------------
+        |
+        | Project managers can manage clients, projects, tasks, approvals,
+        | project documents, payment visibility and collection follow-ups.
+        | They cannot create, edit or delete financial payment transactions.
+        |
         */
 
         $projectManager->syncPermissions([
@@ -243,6 +269,10 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'payments.view',
 
+            'payment-followups.view',
+            'payment-followups.create',
+            'payment-followups.update',
+
             'expenses.view',
 
             'tickets.view',
@@ -258,6 +288,10 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         | Accounts Permissions
         |--------------------------------------------------------------------------
+        |
+        | Accounts users can manage payments, payment follow-ups, expenses
+        | and financial reports.
+        |
         */
 
         $accounts->syncPermissions([
@@ -272,6 +306,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.update',
             'payments.delete',
 
+            'payment-followups.view',
+            'payment-followups.create',
+            'payment-followups.update',
+            'payment-followups.delete',
+
             'expenses.view',
             'expenses.create',
             'expenses.update',
@@ -285,6 +324,10 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         | Team Member Permissions
         |--------------------------------------------------------------------------
+        |
+        | Team members can work on assigned projects, tasks, files, notes
+        | and tickets. Financial payment records remain restricted.
+        |
         */
 
         $teamMember->syncPermissions([
@@ -320,7 +363,11 @@ class RolesAndPermissionsSeeder extends Seeder
         $adminEmail = config('admin.email');
         $adminPassword = config('admin.password');
 
-        if (!$adminName || !$adminEmail || !$adminPassword) {
+        if (
+            blank($adminName) ||
+            blank($adminEmail) ||
+            blank($adminPassword)
+        ) {
             throw new RuntimeException(
                 'Set SUPER_ADMIN_NAME, SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD in the .env file.'
             );
@@ -348,6 +395,7 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        app(PermissionRegistrar::class)
+            ->forgetCachedPermissions();
     }
 }

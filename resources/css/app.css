@@ -84,3 +84,24 @@ select,
 textarea {
     -webkit-tap-highlight-color: transparent;
 }
+
+@media print {
+    aside,
+    header,
+    .print-hidden {
+        display: none !important;
+    }
+
+    body {
+        background: white !important;
+    }
+
+    main {
+        padding: 0 !important;
+    }
+
+    .lg\:pl-72,
+    .lg\:pl-20 {
+        padding-left: 0 !important;
+    }
+}

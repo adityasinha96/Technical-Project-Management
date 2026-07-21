@@ -97,4 +97,28 @@ class User extends Authenticatable implements MustVerifyEmail
             'reviewed_by'
         );
     }
+
+    public function recordedPayments(): HasMany
+    {
+        return $this->hasMany(
+            Payment::class,
+            'created_by'
+        );
+    }
+
+    public function voidedPayments(): HasMany
+    {
+        return $this->hasMany(
+            Payment::class,
+            'voided_by'
+        );
+    }
+
+    public function assignedPaymentFollowups(): HasMany
+    {
+        return $this->hasMany(
+            PaymentFollowup::class,
+            'assigned_to'
+        );
+    }
 }

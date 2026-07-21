@@ -84,4 +84,14 @@ class Client extends Model
 
         return $location !== '' ? $location : null;
     }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function paymentFollowups(): HasMany
+    {
+        return $this->hasMany(PaymentFollowup::class);
+    }
 }

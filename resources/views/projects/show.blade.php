@@ -139,6 +139,7 @@
                     'overview' => 'Overview',
                     'tasks' => 'Tasks',
                     'approvals' => 'Approvals',
+                    'payments' => 'Payments',
                     'team' => 'Team',
                     'files' => 'Files',
                     'technical' => 'Technical Details',
@@ -283,6 +284,9 @@
 
         {{-- Approvals tab partial --}}
         @include('projects.partials.approvals-tab')
+
+        {{-- Payments tab partial --}}
+        @include('projects.partials.payments-tab')
 
         {{-- Team tab --}}
         <div

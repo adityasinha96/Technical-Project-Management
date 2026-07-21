@@ -259,6 +259,79 @@
                 </a>
             @endcan
 
+            {{-- Payments --}}
+            @can('payments.view')
+                <a
+                    href="{{ route('payments.index') }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{ request()->routeIs(
+                            'payments.index',
+                            'payments.show'
+                        )
+                            ? 'bg-white/10 text-white'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                >
+                    <span
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition
+                            {{ request()->routeIs(
+                                'payments.index',
+                                'payments.show'
+                            )
+                                ? 'bg-emerald-500/20 text-emerald-300'
+                                : 'bg-white/5 text-slate-400' }}"
+                    >
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <rect
+                                x="3"
+                                y="5"
+                                width="18"
+                                height="14"
+                                rx="2"
+                            />
+
+                            <path d="M3 10h18M7 15h2"/>
+                        </svg>
+                    </span>
+
+                    <span
+                        x-show="!sidebarCollapsed"
+                        x-transition.opacity
+                    >
+                        Payments
+                    </span>
+                </a>
+
+                <a
+                    href="{{ route('payments.outstanding') }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{ request()->routeIs('payments.outstanding')
+                            ? 'bg-white/10 text-white'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                >
+                    <span
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-black transition
+                            {{ request()->routeIs('payments.outstanding')
+                                ? 'bg-amber-500/20 text-amber-300'
+                                : 'bg-amber-500/10 text-amber-300' }}"
+                    >
+                        ₹
+                    </span>
+
+                    <span
+                        x-show="!sidebarCollapsed"
+                        x-transition.opacity
+                    >
+                        Market Outstanding
+                    </span>
+                </a>
+            @endcan
+
             {{-- Future modules --}}
             <div class="mt-4 space-y-1">
                 <p
@@ -270,7 +343,6 @@
 
                 @foreach ([
                     ['Tasks & Approvals', 'Phase 3'],
-                    ['Payments', 'Phase 4'],
                     ['Expenses', 'Phase 5'],
                     ['Project Notes', 'Phase 6'],
                     ['Tickets', 'Phase 7'],

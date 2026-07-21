@@ -4,6 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Enums\ApprovalStage;
 use App\Enums\ApprovalStatus;
+use App\Enums\PaymentFollowupChannel;
+use App\Enums\PaymentFollowupStatus;
+use App\Enums\PaymentKind;
+use App\Enums\PaymentMode;
+use App\Enums\PaymentStatus;
+use App\Enums\PaymentType;
 use App\Enums\ProjectPriority;
 use App\Enums\ProjectStatus;
 use App\Enums\TaskPhase;
@@ -45,83 +51,85 @@ class ProjectController extends Controller
                 'manager',
             ])
             ->withCount('team')
-            ->search($request->string('search')->toString())
-
+            ->search(
+                $request
+                    ->string('search')
+                    ->toString()
+            )
             ->when(
                 $request->filled('status'),
-                fn ($query) =>
-                    $query->where(
-                        'status',
-                        $request->string('status')->toString()
-                    )
+                fn ($query) => $query->where(
+                    'status',
+                    $request
+                        ->string('status')
+                        ->toString()
+                )
             )
-
             ->when(
                 $request->filled('priority'),
-                fn ($query) =>
-                    $query->where(
-                        'priority',
-                        $request->string('priority')->toString()
-                    )
+                fn ($query) => $query->where(
+                    'priority',
+                    $request
+                        ->string('priority')
+                        ->toString()
+                )
             )
-
             ->when(
                 $request->filled('client_id'),
-                fn ($query) =>
-                    $query->where(
-                        'client_id',
-                        $request->integer('client_id')
-                    )
+                fn ($query) => $query->where(
+                    'client_id',
+                    $request->integer('client_id')
+                )
             )
-
             ->when(
                 $request->filled('category_id'),
-                fn ($query) =>
-                    $query->where(
-                        'project_category_id',
-                        $request->integer('category_id')
-                    )
+                fn ($query) => $query->where(
+                    'project_category_id',
+                    $request->integer('category_id')
+                )
             )
-
             ->when(
                 $request->filled('manager_id'),
-                fn ($query) =>
-                    $query->where(
-                        'manager_id',
-                        $request->integer('manager_id')
+                fn ($query) => $query->where(
+                    'manager_id',
+                    $request->integer('manager_id')
+                )
+            )
+            ->when(
+                $request
+                    ->string('deadline')
+                    ->toString() === 'delayed',
+                fn ($query) => $query
+                    ->open()
+                    ->whereRaw(
+                        'COALESCE(revised_delivery_date, expected_delivery_date) < ?',
+                        [
+                            today()->toDateString(),
+                        ]
                     )
             )
-
             ->when(
-                $request->string('deadline')->toString() === 'delayed',
-                fn ($query) =>
-                    $query
-                        ->open()
-                        ->whereRaw(
-                            'COALESCE(revised_delivery_date, expected_delivery_date) < ?',
-                            [today()->toDateString()]
-                        )
+                $request
+                    ->string('deadline')
+                    ->toString() === 'due_soon',
+                fn ($query) => $query
+                    ->open()
+                    ->whereRaw(
+                        'COALESCE(revised_delivery_date, expected_delivery_date) BETWEEN ? AND ?',
+                        [
+                            today()->toDateString(),
+                            today()
+                                ->addDays($dueSoonDays)
+                                ->toDateString(),
+                        ]
+                    )
             )
-
-            ->when(
-                $request->string('deadline')->toString() === 'due_soon',
-                fn ($query) =>
-                    $query
-                        ->open()
-                        ->whereRaw(
-                            'COALESCE(revised_delivery_date, expected_delivery_date) BETWEEN ? AND ?',
-                            [
-                                today()->toDateString(),
-                                today()
-                                    ->addDays($dueSoonDays)
-                                    ->toDateString(),
-                            ]
-                        )
-            )
-
             ->orderByRaw(
                 'CASE
-                    WHEN COALESCE(revised_delivery_date, expected_delivery_date) < CURDATE()
+                    WHEN COALESCE(
+                        revised_delivery_date,
+                        expected_delivery_date
+                    ) < CURDATE()
                     AND status NOT IN (?, ?)
                     THEN 0
                     ELSE 1
@@ -129,13 +137,17 @@ class ProjectController extends Controller
                 ProjectStatus::closedValues()
             )
             ->orderByRaw(
-                'COALESCE(revised_delivery_date, expected_delivery_date) ASC'
+                'COALESCE(
+                    revised_delivery_date,
+                    expected_delivery_date
+                ) ASC'
             )
             ->paginate(15)
             ->withQueryString();
 
         $summary = [
-            'total_projects' => Project::query()->count(),
+            'total_projects' => Project::query()
+                ->count(),
 
             'active_projects' => Project::query()
                 ->open()
@@ -152,7 +164,9 @@ class ProjectController extends Controller
                 ->open()
                 ->whereRaw(
                     'COALESCE(revised_delivery_date, expected_delivery_date) < ?',
-                    [today()->toDateString()]
+                    [
+                        today()->toDateString(),
+                    ]
                 )
                 ->count(),
 
@@ -193,7 +207,8 @@ class ProjectController extends Controller
                 'status' => ProjectStatus::NewProject,
                 'priority' => ProjectPriority::Medium,
                 'start_date' => today(),
-                'expected_delivery_date' => today()->addDays(18),
+                'expected_delivery_date' =>
+                    today()->addDays(18),
                 'maximum_duration_days' => 18,
             ]),
 
@@ -264,7 +279,10 @@ class ProjectController extends Controller
         }
 
         return redirect()
-            ->route('projects.show', $project)
+            ->route(
+                'projects.show',
+                $project
+            )
             ->with(
                 'success',
                 $templateId
@@ -276,18 +294,62 @@ class ProjectController extends Controller
     public function show(Project $project): View
     {
         $project->load([
+            /*
+            |--------------------------------------------------------------------------
+            | Core project relationships
+            |--------------------------------------------------------------------------
+            */
+
             'client',
             'category',
             'template',
             'manager',
             'team',
 
+            /*
+            |--------------------------------------------------------------------------
+            | Tasks
+            |--------------------------------------------------------------------------
+            */
+
             'tasks.assignee',
             'tasks.createdBy',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Approvals
+            |--------------------------------------------------------------------------
+            */
 
             'approvals.submittedBy',
             'approvals.reviewedBy',
             'approvals.proofFile',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payments
+            |--------------------------------------------------------------------------
+            */
+
+            'payments.proofFile',
+            'payments.createdBy',
+            'payments.voidedBy',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment Follow-ups
+            |--------------------------------------------------------------------------
+            */
+
+            'paymentFollowups.assignedTo',
+            'paymentFollowups.createdBy',
+            'paymentFollowups.completedBy',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Files and audit information
+            |--------------------------------------------------------------------------
+            */
 
             'files.uploadedBy',
             'createdBy',
@@ -297,22 +359,71 @@ class ProjectController extends Controller
         return view('projects.show', [
             'project' => $project,
 
+            /*
+            |--------------------------------------------------------------------------
+            | Available Users
+            |--------------------------------------------------------------------------
+            */
+
             'availableUsers' => User::query()
                 ->where('status', 'active')
                 ->orderBy('name')
                 ->get(),
 
-            'availableTemplates' => ProjectTemplate::query()
-                ->active()
-                ->withCount('tasks')
-                ->get(),
+            /*
+            |--------------------------------------------------------------------------
+            | Available Project Templates
+            |--------------------------------------------------------------------------
+            */
+
+            'availableTemplates' =>
+                ProjectTemplate::query()
+                    ->active()
+                    ->withCount('tasks')
+                    ->get(),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Task Data
+            |--------------------------------------------------------------------------
+            */
 
             'taskPhases' => TaskPhase::cases(),
             'taskStatuses' => TaskStatus::cases(),
             'priorities' => ProjectPriority::cases(),
 
+            /*
+            |--------------------------------------------------------------------------
+            | Approval Data
+            |--------------------------------------------------------------------------
+            */
+
             'approvalStages' => ApprovalStage::cases(),
-            'approvalStatuses' => ApprovalStatus::cases(),
+            'approvalStatuses' =>
+                ApprovalStatus::cases(),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment Data
+            |--------------------------------------------------------------------------
+            */
+
+            'paymentKinds' => PaymentKind::cases(),
+            'paymentTypes' => PaymentType::cases(),
+            'paymentModes' => PaymentMode::cases(),
+            'paymentStatuses' => PaymentStatus::cases(),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Payment Follow-up Data
+            |--------------------------------------------------------------------------
+            */
+
+            'followupChannels' =>
+                PaymentFollowupChannel::cases(),
+
+            'followupStatuses' =>
+                PaymentFollowupStatus::cases(),
         ]);
     }
 
@@ -331,7 +442,9 @@ class ProjectController extends Controller
             'selectedTeam' => $project
                 ->team
                 ->pluck('id')
-                ->map(fn ($id): int => (int) $id)
+                ->map(
+                    fn ($id): int => (int) $id
+                )
                 ->all(),
         ]);
     }
@@ -342,13 +455,14 @@ class ProjectController extends Controller
     ): RedirectResponse {
         $validated = $request->validated();
 
-        $teamIds = $validated['team_member_ids'] ?? [];
+        $teamIds =
+            $validated['team_member_ids'] ?? [];
 
         /*
          * The selected template is intentionally excluded.
          *
-         * Editing general project information must not reapply a template
-         * or replace the project's existing tasks.
+         * Editing general project information must not reapply
+         * a template or replace the project's existing tasks.
          */
         $projectData = Arr::except(
             $validated,
@@ -367,7 +481,8 @@ class ProjectController extends Controller
             ): void {
                 $project->update([
                     ...$projectData,
-                    'updated_by' => $request->user()->id,
+                    'updated_by' =>
+                        $request->user()->id,
                 ]);
 
                 $this->syncTeam(
@@ -380,8 +495,14 @@ class ProjectController extends Controller
         );
 
         return redirect()
-            ->route('projects.show', $project)
-            ->with('success', 'Project updated successfully.');
+            ->route(
+                'projects.show',
+                $project
+            )
+            ->with(
+                'success',
+                'Project updated successfully.'
+            );
     }
 
     public function destroy(
@@ -391,14 +512,21 @@ class ProjectController extends Controller
 
         return redirect()
             ->route('projects.index')
-            ->with('success', 'Project moved to archive.');
+            ->with(
+                'success',
+                'Project moved to archive.'
+            );
     }
 
     private function formData(): array
     {
         return [
             'clients' => Client::query()
-                ->where('status', '!=', 'blocked')
+                ->where(
+                    'status',
+                    '!=',
+                    'blocked'
+                )
                 ->orderBy('company_name')
                 ->orderBy('name')
                 ->get(),
@@ -430,7 +558,9 @@ class ProjectController extends Controller
     ): void {
         $memberIds = collect($teamIds)
             ->filter()
-            ->map(fn ($id): int => (int) $id);
+            ->map(
+                fn ($id): int => (int) $id
+            );
 
         if ($managerId) {
             $memberIds->push($managerId);
@@ -456,6 +586,8 @@ class ProjectController extends Controller
             )
             ->all();
 
-        $project->team()->sync($syncData);
+        $project
+            ->team()
+            ->sync($syncData);
     }
 }

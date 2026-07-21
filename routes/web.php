@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PaymentFollowupController;
 use App\Http\Controllers\ProjectApprovalController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectFileController;
@@ -307,4 +309,83 @@ Route::middleware([
     )
         ->middleware('can:projects.manage-files')
         ->name('projects.files.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payments and Outstanding Balance
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/payments',
+        [PaymentController::class, 'index']
+    )
+        ->middleware('can:payments.view')
+        ->name('payments.index');
+
+    /*
+     * This route must remain above /payments/{payment}.
+     * Otherwise, Laravel may treat "outstanding" as a payment identifier.
+     */
+    Route::get(
+        '/payments/outstanding',
+        [PaymentController::class, 'outstanding']
+    )
+        ->middleware('can:payments.view')
+        ->name('payments.outstanding');
+
+    Route::get(
+        '/payments/{payment}',
+        [PaymentController::class, 'show']
+    )
+        ->middleware('can:payments.view')
+        ->name('payments.show');
+
+    Route::post(
+        '/projects/{project}/payments',
+        [PaymentController::class, 'store']
+    )
+        ->middleware('can:payments.create')
+        ->name('projects.payments.store');
+
+    Route::put(
+        '/payments/{payment}/status',
+        [PaymentController::class, 'updateStatus']
+    )
+        ->middleware('can:payments.update')
+        ->name('payments.status.update');
+
+    Route::put(
+        '/payments/{payment}/void',
+        [PaymentController::class, 'void']
+    )
+        ->middleware('can:payments.delete')
+        ->name('payments.void');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Follow-ups
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/projects/{project}/payment-followups',
+        [PaymentFollowupController::class, 'store']
+    )
+        ->middleware('can:payments.followup')
+        ->name('projects.payment-followups.store');
+
+    Route::put(
+        '/projects/{project}/payment-followups/{paymentFollowup}',
+        [PaymentFollowupController::class, 'update']
+    )
+        ->middleware('can:payments.followup')
+        ->name('projects.payment-followups.update');
+
+    Route::delete(
+        '/projects/{project}/payment-followups/{paymentFollowup}',
+        [PaymentFollowupController::class, 'destroy']
+    )
+        ->middleware('can:payments.followup')
+        ->name('projects.payment-followups.destroy');
 });
