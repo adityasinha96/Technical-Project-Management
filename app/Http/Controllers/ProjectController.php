@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\ApprovalStage;
 use App\Enums\ApprovalStatus;
+use App\Enums\ExpenseScope;
+use App\Enums\ExpenseStatus;
 use App\Enums\PaymentFollowupChannel;
 use App\Enums\PaymentFollowupStatus;
 use App\Enums\PaymentKind;
@@ -17,6 +19,7 @@ use App\Enums\TaskStatus;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Client;
+use App\Models\ExpenseCategory;
 use App\Models\Project;
 use App\Models\ProjectCategory;
 use App\Models\ProjectTemplate;
@@ -347,6 +350,16 @@ class ProjectController extends Controller
 
             /*
             |--------------------------------------------------------------------------
+            | Expenses
+            |--------------------------------------------------------------------------
+            */
+
+            'expenses.category',
+            'expenses.createdBy',
+            'expenses.voidedBy',
+
+            /*
+            |--------------------------------------------------------------------------
             | Files and audit information
             |--------------------------------------------------------------------------
             */
@@ -399,6 +412,7 @@ class ProjectController extends Controller
             */
 
             'approvalStages' => ApprovalStage::cases(),
+
             'approvalStatuses' =>
                 ApprovalStatus::cases(),
 
@@ -424,6 +438,26 @@ class ProjectController extends Controller
 
             'followupStatuses' =>
                 PaymentFollowupStatus::cases(),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Expense Data
+            |--------------------------------------------------------------------------
+            */
+
+            'expenseCategories' =>
+                ExpenseCategory::query()
+                    ->active()
+                    ->forExpenseScope(
+                        ExpenseScope::Project
+                    )
+                    ->get(),
+
+            'expenseStatuses' =>
+                ExpenseStatus::cases(),
+
+            'expensePaymentModes' =>
+                PaymentMode::cases(),
         ]);
     }
 

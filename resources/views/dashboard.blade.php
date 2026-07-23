@@ -712,6 +712,236 @@
             </section>
         @endcan
 
+        {{-- Phase 5 monthly profitability statistics --}}
+        @can('reports.profitability')
+            <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <article class="rounded-3xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm">
+                    <p class="text-sm font-medium text-indigo-700">
+                        Monthly Collection
+                    </p>
+
+                    <p class="mt-2 text-3xl font-black text-indigo-950">
+                        ₹{{ number_format(
+                            (float) $currentMonthFinancials['collection'],
+                            2
+                        ) }}
+                    </p>
+                </article>
+
+                <article class="rounded-3xl border border-red-200 bg-red-50 p-5 shadow-sm">
+                    <p class="text-sm font-medium text-red-700">
+                        Monthly Expenses
+                    </p>
+
+                    <p class="mt-2 text-3xl font-black text-red-950">
+                        ₹{{ number_format(
+                            (float) $currentMonthFinancials['total_expenses'],
+                            2
+                        ) }}
+                    </p>
+                </article>
+
+                <article
+                    class="rounded-3xl border {{
+                        (float) $currentMonthFinancials['cash_profit'] >= 0
+                            ? 'border-emerald-200 bg-emerald-50'
+                            : 'border-red-200 bg-red-50'
+                    }} p-5 shadow-sm"
+                >
+                    <p
+                        class="text-sm font-medium {{
+                            (float) $currentMonthFinancials['cash_profit'] >= 0
+                                ? 'text-emerald-700'
+                                : 'text-red-700'
+                        }}"
+                    >
+                        Monthly Cash Profit
+                    </p>
+
+                    <p
+                        class="mt-2 text-3xl font-black {{
+                            (float) $currentMonthFinancials['cash_profit'] >= 0
+                                ? 'text-emerald-950'
+                                : 'text-red-950'
+                        }}"
+                    >
+                        ₹{{ number_format(
+                            (float) $currentMonthFinancials['cash_profit'],
+                            2
+                        ) }}
+                    </p>
+                </article>
+
+                <article
+                    class="rounded-3xl border {{
+                        (float) $profitabilitySummary['business_cash_position'] >= 0
+                            ? 'border-cyan-200 bg-cyan-50'
+                            : 'border-red-200 bg-red-50'
+                    }} p-5 shadow-sm"
+                >
+                    <p
+                        class="text-sm font-medium {{
+                            (float) $profitabilitySummary['business_cash_position'] >= 0
+                                ? 'text-cyan-700'
+                                : 'text-red-700'
+                        }}"
+                    >
+                        Business Cash Position
+                    </p>
+
+                    <p
+                        class="mt-2 text-3xl font-black {{
+                            (float) $profitabilitySummary['business_cash_position'] >= 0
+                                ? 'text-cyan-950'
+                                : 'text-red-950'
+                        }}"
+                    >
+                        ₹{{ number_format(
+                            (float) $profitabilitySummary['business_cash_position'],
+                            2
+                        ) }}
+                    </p>
+                </article>
+            </section>
+
+            {{-- Phase 5 profitability risk alerts --}}
+            <section class="grid gap-6 xl:grid-cols-2">
+                {{-- Loss-making projects --}}
+                <article class="overflow-hidden rounded-3xl border border-red-200 bg-white shadow-sm">
+                    <div class="border-b border-red-100 bg-red-50 p-5">
+                        <h3 class="font-bold text-red-950">
+                            Loss-Making Projects
+                        </h3>
+
+                        <p class="mt-1 text-sm text-red-700">
+                            Actual project expenses have exceeded the contracted project price.
+                        </p>
+                    </div>
+
+                    <div class="divide-y divide-slate-100">
+                        @forelse ($lossMakingProjects as $project)
+                            <a
+                                href="{{ route('projects.show', [
+                                    'project' => $project,
+                                    'tab' => 'expenses',
+                                ]) }}"
+                                class="block p-5 transition hover:bg-red-50/40"
+                            >
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="min-w-0">
+                                        <p class="truncate font-bold text-slate-950">
+                                            {{ $project->name }}
+                                        </p>
+
+                                        <p class="mt-1 truncate text-xs text-slate-500">
+                                            {{ $project->client?->display_name ?? 'No client assigned' }}
+                                        </p>
+                                    </div>
+
+                                    <p class="shrink-0 font-black text-red-700">
+                                        ₹{{ number_format(
+                                            (float) $project->actual_profit_amount,
+                                            2
+                                        ) }}
+                                    </p>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="p-10 text-center">
+                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                                    <svg
+                                        class="h-6 w-6"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <path d="M20 6L9 17l-5-5"/>
+                                    </svg>
+                                </div>
+
+                                <p class="mt-3 font-bold text-emerald-700">
+                                    No loss-making projects
+                                </p>
+                            </div>
+                        @endforelse
+                    </div>
+                </article>
+
+                {{-- Cash-negative projects --}}
+                <article class="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm">
+                    <div class="border-b border-amber-100 bg-amber-50 p-5">
+                        <h3 class="font-bold text-amber-950">
+                            Cash-Negative Projects
+                        </h3>
+
+                        <p class="mt-1 text-sm text-amber-700">
+                            Project expenses are currently higher than payment collected.
+                        </p>
+                    </div>
+
+                    <div class="divide-y divide-slate-100">
+                        @forelse ($cashNegativeProjects as $project)
+                            <a
+                                href="{{ route('projects.show', [
+                                    'project' => $project,
+                                    'tab' => 'expenses',
+                                ]) }}"
+                                class="block p-5 transition hover:bg-amber-50/40"
+                            >
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="min-w-0">
+                                        <p class="truncate font-bold text-slate-950">
+                                            {{ $project->name }}
+                                        </p>
+
+                                        <p class="mt-1 text-xs text-slate-500">
+                                            Received:
+                                            ₹{{ number_format(
+                                                (float) $project->net_received_amount,
+                                                2
+                                            ) }}
+
+                                            · Expenses:
+                                            ₹{{ number_format(
+                                                (float) $project->project_expense_amount,
+                                                2
+                                            ) }}
+                                        </p>
+                                    </div>
+
+                                    <p class="shrink-0 font-black text-red-700">
+                                        ₹{{ number_format(
+                                            (float) $project->cash_position_amount,
+                                            2
+                                        ) }}
+                                    </p>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="p-10 text-center">
+                                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                                    <svg
+                                        class="h-6 w-6"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <path d="M20 6L9 17l-5-5"/>
+                                    </svg>
+                                </div>
+
+                                <p class="mt-3 font-bold text-emerald-700">
+                                    No cash-negative projects
+                                </p>
+                            </div>
+                        @endforelse
+                    </div>
+                </article>
+            </section>
+        @endcan
+
         {{-- Financial and completion summary --}}
         <section class="grid gap-4 sm:grid-cols-2">
 

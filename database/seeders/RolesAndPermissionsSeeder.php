@@ -148,6 +148,14 @@ class RolesAndPermissionsSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
+            | Expense Categories
+            |--------------------------------------------------------------------------
+            */
+
+            'expense-categories.manage',
+
+            /*
+            |--------------------------------------------------------------------------
             | Tickets
             |--------------------------------------------------------------------------
             */
@@ -167,6 +175,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'reports.view',
             'reports.export',
+            'reports.profitability',
 
             /*
             |--------------------------------------------------------------------------
@@ -233,8 +242,11 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         |
         | Project managers can manage clients, projects, tasks, approvals,
-        | project documents, payment visibility and collection follow-ups.
-        | They cannot create, edit or delete financial payment transactions.
+        | project documents, payment visibility, collection follow-ups,
+        | operational expenses and profitability reports.
+        |
+        | Project managers cannot delete expense records or manage expense
+        | categories.
         |
         */
 
@@ -274,6 +286,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'payment-followups.update',
 
             'expenses.view',
+            'expenses.create',
+            'expenses.update',
 
             'tickets.view',
             'tickets.create',
@@ -282,6 +296,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'tickets.close',
 
             'reports.view',
+            'reports.profitability',
         ]);
 
         /*
@@ -289,8 +304,8 @@ class RolesAndPermissionsSeeder extends Seeder
         | Accounts Permissions
         |--------------------------------------------------------------------------
         |
-        | Accounts users can manage payments, payment follow-ups, expenses
-        | and financial reports.
+        | Accounts users can manage payments, payment follow-ups, expenses,
+        | expense categories and financial profitability reports.
         |
         */
 
@@ -316,8 +331,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'expenses.update',
             'expenses.delete',
 
+            'expense-categories.manage',
+
             'reports.view',
             'reports.export',
+            'reports.profitability',
         ]);
 
         /*
@@ -326,7 +344,10 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         |
         | Team members can work on assigned projects, tasks, files, notes
-        | and tickets. Financial payment records remain restricted.
+        | and tickets.
+        |
+        | Expense records, payment records and profitability reports remain
+        | restricted.
         |
         */
 

@@ -43,6 +43,16 @@ class Project extends Model
         'collection_percentage',
         'last_payment_date',
 
+        /*
+        |--------------------------------------------------------------------------
+        | Expense and profitability summary fields
+        |--------------------------------------------------------------------------
+        */
+        'project_expense_amount',
+        'actual_profit_amount',
+        'profit_margin_percentage',
+        'cash_position_amount',
+
         'start_date',
         'expected_delivery_date',
         'revised_delivery_date',
@@ -87,6 +97,16 @@ class Project extends Model
             'pending_amount' => 'decimal:2',
             'collection_percentage' => 'decimal:2',
             'last_payment_date' => 'date',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Expense and profitability summary casts
+            |--------------------------------------------------------------------------
+            */
+            'project_expense_amount' => 'decimal:2',
+            'actual_profit_amount' => 'decimal:2',
+            'profit_margin_percentage' => 'decimal:2',
+            'cash_position_amount' => 'decimal:2',
 
             'start_date' => 'date',
             'expected_delivery_date' => 'date',
@@ -187,6 +207,20 @@ class Project extends Model
 
     /*
     |--------------------------------------------------------------------------
+    | Expense relationships
+    |--------------------------------------------------------------------------
+    */
+
+    public function expenses(): HasMany
+    {
+        return $this
+            ->hasMany(Expense::class)
+            ->latest('expense_date')
+            ->latest('id');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Financial accessors
     |--------------------------------------------------------------------------
     */
@@ -248,6 +282,56 @@ class Project extends Model
     public function getIsFullyPaidAttribute(): bool
     {
         return (float) $this->pending_amount <= 0;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profitability helpers
+    |--------------------------------------------------------------------------
+    */
+
+    public function getIsLossMakingAttribute(): bool
+    {
+        return (float) $this->actual_profit_amount < 0;
+    }
+
+    public function getIsCashNegativeAttribute(): bool
+    {
+        return (float) $this->cash_position_amount < 0;
+    }
+
+    public function getProfitHealthLabelAttribute(): string
+    {
+        if ($this->is_loss_making) {
+            return 'Loss Making';
+        }
+
+        if ((float) $this->profit_margin_percentage < 10) {
+            return 'Low Margin';
+        }
+
+        if ((float) $this->profit_margin_percentage < 25) {
+            return 'Moderate Margin';
+        }
+
+        return 'Healthy Margin';
+    }
+
+    public function getProfitHealthClassesAttribute(): string
+    {
+        if ($this->is_loss_making) {
+            return 'bg-red-50 text-red-700 ring-red-600/20';
+        }
+
+        if ((float) $this->profit_margin_percentage < 10) {
+            return 'bg-orange-50 text-orange-700 ring-orange-600/20';
+        }
+
+        if ((float) $this->profit_margin_percentage < 25) {
+            return 'bg-amber-50 text-amber-700 ring-amber-600/20';
+        }
+
+        return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20';
     }
 
     /*
@@ -315,7 +399,7 @@ class Project extends Model
 
     /*
     |--------------------------------------------------------------------------
-    | Query scopes
+       | Query scopes
     |--------------------------------------------------------------------------
     */
 

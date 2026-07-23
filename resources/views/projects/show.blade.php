@@ -140,6 +140,7 @@
                     'tasks' => 'Tasks',
                     'approvals' => 'Approvals',
                     'payments' => 'Payments',
+                    'expenses' => 'Expenses & Profit',
                     'team' => 'Team',
                     'files' => 'Files',
                     'technical' => 'Technical Details',
@@ -164,8 +165,9 @@
             x-cloak
         >
             <div class="space-y-6">
-                <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                     @can('payments.view')
+                        {{-- Project price --}}
                         <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                             <p class="text-sm text-slate-500">
                                 Project Price
@@ -179,6 +181,7 @@
                             </p>
                         </article>
 
+                        {{-- Estimated project cost --}}
                         <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                             <p class="text-sm text-slate-500">
                                 Estimated Cost
@@ -190,36 +193,111 @@
                                     2
                                 ) }}
                             </p>
+
+                            <p class="mt-1 text-xs font-semibold text-slate-500">
+                                Planned project cost
+                            </p>
                         </article>
 
-                        <article class="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-                            <p class="text-sm text-emerald-700">
-                                Expected Profit
+                        {{-- Actual paid project expenses --}}
+                        <article class="rounded-3xl border border-red-200 bg-red-50 p-5 shadow-sm">
+                            <p class="text-sm text-red-700">
+                                Actual Project Expenses
                             </p>
 
-                            <p class="mt-2 text-2xl font-black text-emerald-950">
+                            <p class="mt-2 text-2xl font-black text-red-950">
                                 ₹{{ number_format(
-                                    (float) $project->expected_profit,
+                                    (float) $project->project_expense_amount,
                                     2
                                 ) }}
                             </p>
 
-                            <p class="mt-1 text-xs font-bold text-emerald-700">
-                                {{ $project->expected_profit_percentage }}%
+                            <p class="mt-1 text-xs font-semibold text-red-700">
+                                Approved and paid expenses
+                            </p>
+                        </article>
+
+                        {{-- Actual project profit --}}
+                        <article
+                            class="rounded-3xl border {{
+                                (float) $project->actual_profit_amount >= 0
+                                    ? 'border-emerald-200 bg-emerald-50'
+                                    : 'border-red-200 bg-red-50'
+                            }} p-5 shadow-sm"
+                        >
+                            <p
+                                class="text-sm {{
+                                    (float) $project->actual_profit_amount >= 0
+                                        ? 'text-emerald-700'
+                                        : 'text-red-700'
+                                }}"
+                            >
+                                Actual Project Profit
+                            </p>
+
+                            <p
+                                class="mt-2 text-2xl font-black {{
+                                    (float) $project->actual_profit_amount >= 0
+                                        ? 'text-emerald-950'
+                                        : 'text-red-950'
+                                }}"
+                            >
+                                ₹{{ number_format(
+                                    (float) $project->actual_profit_amount,
+                                    2
+                                ) }}
+                            </p>
+
+                            <p
+                                class="mt-1 text-xs font-bold {{
+                                    (float) $project->actual_profit_amount >= 0
+                                        ? 'text-emerald-700'
+                                        : 'text-red-700'
+                                }}"
+                            >
+                                {{ number_format(
+                                    (float) $project->profit_margin_percentage,
+                                    2
+                                ) }}% margin
                             </p>
                         </article>
                     @endcan
 
-                    <article class="rounded-3xl border {{ $project->is_delayed ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white' }} p-5 shadow-sm">
-                        <p class="text-sm {{ $project->is_delayed ? 'text-red-700' : 'text-slate-500' }}">
+                    {{-- Project deadline --}}
+                    <article
+                        class="rounded-3xl border {{
+                            $project->is_delayed
+                                ? 'border-red-200 bg-red-50'
+                                : 'border-slate-200 bg-white'
+                        }} p-5 shadow-sm"
+                    >
+                        <p
+                            class="text-sm {{
+                                $project->is_delayed
+                                    ? 'text-red-700'
+                                    : 'text-slate-500'
+                            }}"
+                        >
                             Deadline
                         </p>
 
-                        <p class="mt-2 text-xl font-black {{ $project->is_delayed ? 'text-red-950' : 'text-slate-950' }}">
+                        <p
+                            class="mt-2 text-xl font-black {{
+                                $project->is_delayed
+                                    ? 'text-red-950'
+                                    : 'text-slate-950'
+                            }}"
+                        >
                             {{ $project->deadline?->format('d M Y') ?? 'Not provided' }}
                         </p>
 
-                        <p class="mt-1 text-xs font-bold {{ $project->is_delayed ? 'text-red-700' : 'text-slate-500' }}">
+                        <p
+                            class="mt-1 text-xs font-bold {{
+                                $project->is_delayed
+                                    ? 'text-red-700'
+                                    : 'text-slate-500'
+                            }}"
+                        >
                             {{ $project->deadline_label }}
                         </p>
                     </article>
@@ -287,6 +365,9 @@
 
         {{-- Payments tab partial --}}
         @include('projects.partials.payments-tab')
+
+        {{-- Expenses and profitability tab partial --}}
+        @include('projects.partials.expenses-tab')
 
         {{-- Team tab --}}
         <div

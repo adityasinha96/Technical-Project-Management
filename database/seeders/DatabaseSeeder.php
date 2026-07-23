@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             SystemSettingsSeeder::class,
             ProjectCategorySeeder::class,
             ProjectTemplateSeeder::class,
+            ExpenseCategorySeeder::class,
         ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Project;
+use App\Services\Expenses\ProjectProfitabilityService;
 use App\Services\Payments\ProjectFinancialService;
 
 class ProjectObserver
@@ -10,6 +11,9 @@ class ProjectObserver
     public function created(Project $project): void
     {
         app(ProjectFinancialService::class)
+            ->synchronize($project);
+
+        app(ProjectProfitabilityService::class)
             ->synchronize($project);
     }
 
@@ -21,6 +25,9 @@ class ProjectObserver
             ])
         ) {
             app(ProjectFinancialService::class)
+                ->synchronize($project);
+
+            app(ProjectProfitabilityService::class)
                 ->synchronize($project);
         }
     }

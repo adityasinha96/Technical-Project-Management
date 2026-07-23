@@ -121,4 +121,20 @@ class User extends Authenticatable implements MustVerifyEmail
             'assigned_to'
         );
     }
+
+    public function recordedExpenses(): HasMany
+    {
+        return $this->hasMany(
+            Expense::class,
+            'created_by'
+        );
+    }
+
+    public function voidedExpenses(): HasMany
+    {
+        return $this->hasMany(
+            Expense::class,
+            'voided_by'
+        );
+    }
 }

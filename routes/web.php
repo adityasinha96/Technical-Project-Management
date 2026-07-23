@@ -2,8 +2,11 @@
 
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExpenseCategoryController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentFollowupController;
+use App\Http\Controllers\ProfitabilityController;
 use App\Http\Controllers\ProjectApprovalController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectFileController;
@@ -388,4 +391,117 @@ Route::middleware([
     )
         ->middleware('can:payments.followup')
         ->name('projects.payment-followups.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Expense Categories
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/expense-categories',
+        [ExpenseCategoryController::class, 'index']
+    )
+        ->middleware('can:expense-categories.manage')
+        ->name('expense-categories.index');
+
+    Route::post(
+        '/expense-categories',
+        [ExpenseCategoryController::class, 'store']
+    )
+        ->middleware('can:expense-categories.manage')
+        ->name('expense-categories.store');
+
+    Route::put(
+        '/expense-categories/{expenseCategory}',
+        [ExpenseCategoryController::class, 'update']
+    )
+        ->middleware('can:expense-categories.manage')
+        ->name('expense-categories.update');
+
+    Route::delete(
+        '/expense-categories/{expenseCategory}',
+        [ExpenseCategoryController::class, 'destroy']
+    )
+        ->middleware('can:expense-categories.manage')
+        ->name('expense-categories.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Expenses
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/expenses',
+        [ExpenseController::class, 'index']
+    )
+        ->middleware('can:expenses.view')
+        ->name('expenses.index');
+
+    /*
+     * This route must remain above /expenses/{expense}.
+     * Otherwise, Laravel may treat "create" as an expense identifier.
+     */
+    Route::get(
+        '/expenses/create',
+        [ExpenseController::class, 'create']
+    )
+        ->middleware('can:expenses.create')
+        ->name('expenses.create');
+
+    Route::get(
+        '/expenses/{expense}',
+        [ExpenseController::class, 'show']
+    )
+        ->middleware('can:expenses.view')
+        ->name('expenses.show');
+
+    Route::post(
+        '/expenses',
+        [ExpenseController::class, 'store']
+    )
+        ->middleware('can:expenses.create')
+        ->name('expenses.store');
+
+    Route::get(
+        '/expenses/{expense}/edit',
+        [ExpenseController::class, 'edit']
+    )
+        ->middleware('can:expenses.update')
+        ->name('expenses.edit');
+
+    Route::put(
+        '/expenses/{expense}',
+        [ExpenseController::class, 'update']
+    )
+        ->middleware('can:expenses.update')
+        ->name('expenses.update');
+
+    Route::put(
+        '/expenses/{expense}/status',
+        [ExpenseController::class, 'updateStatus']
+    )
+        ->middleware('can:expenses.update')
+        ->name('expenses.status.update');
+
+    Route::put(
+        '/expenses/{expense}/void',
+        [ExpenseController::class, 'void']
+    )
+        ->middleware('can:expenses.delete')
+        ->name('expenses.void');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profitability
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/profitability',
+        [ProfitabilityController::class, 'index']
+    )
+        ->middleware('can:reports.profitability')
+        ->name('profitability.index');
 });

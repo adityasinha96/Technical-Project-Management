@@ -5,9 +5,15 @@ namespace App\Services\Payments;
 use App\Enums\PaymentKind;
 use App\Enums\PaymentStatus;
 use App\Models\Project;
+use App\Services\Expenses\ProjectProfitabilityService;
 
 class ProjectFinancialService
 {
+    public function __construct(
+        private readonly ProjectProfitabilityService $profitabilityService
+    ) {
+    }
+
     public function synchronize(
         Project $project
     ): array {
@@ -110,6 +116,14 @@ class ProjectFinancialService
             'last_payment_date' =>
                 $totals?->last_payment_date,
         ])->saveQuietly();
+
+        /*
+         * Recalculate project profitability after payment totals
+         * have changed. This keeps the cash position synchronized
+         * after payments, refunds and void actions.
+         */
+        $this->profitabilityService
+            ->synchronize($project);
 
         return [
             'total_receipts' => $totalReceipts,

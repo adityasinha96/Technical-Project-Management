@@ -9,17 +9,42 @@ use App\Enums\PaymentKind;
 use App\Enums\ProjectStatus;
 use App\Enums\TaskStatus;
 use App\Models\Client;
+use App\Models\Expense;
 use App\Models\Payment;
 use App\Models\PaymentFollowup;
 use App\Models\Project;
 use App\Models\ProjectApproval;
 use App\Models\ProjectTask;
+use App\Services\Reports\ProfitabilityReportService;
 use Illuminate\Contracts\View\View;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private readonly ProfitabilityReportService $profitabilityReportService
+    ) {
+    }
+
     public function index(): View
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Profitability Report Summaries
+        |--------------------------------------------------------------------------
+        */
+
+        $profitabilitySummary =
+            $this->profitabilityReportService
+                ->summary();
+
+        $currentMonthFinancials =
+            $this->profitabilityReportService
+                ->monthSummary();
+
+        $monthlyFinancials =
+            $this->profitabilityReportService
+                ->monthly(6);
+
         /*
         |--------------------------------------------------------------------------
         | Dashboard Statistics
@@ -303,6 +328,46 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Loss-Making Projects
+        |--------------------------------------------------------------------------
+        */
+
+        $lossMakingProjects = Project::query()
+            ->with([
+                'client',
+                'manager',
+            ])
+            ->where(
+                'actual_profit_amount',
+                '<',
+                0
+            )
+            ->orderBy('actual_profit_amount')
+            ->limit(6)
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cash-Negative Projects
+        |--------------------------------------------------------------------------
+        */
+
+        $cashNegativeProjects = Project::query()
+            ->with([
+                'client',
+                'manager',
+            ])
+            ->where(
+                'cash_position_amount',
+                '<',
+                0
+            )
+            ->orderBy('cash_position_amount')
+            ->limit(6)
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
         | Dashboard View
         |--------------------------------------------------------------------------
         */
@@ -321,6 +386,21 @@ class DashboardController extends Controller
 
             'overduePaymentFollowups' =>
                 $overduePaymentFollowups,
+
+            'profitabilitySummary' =>
+                $profitabilitySummary,
+
+            'currentMonthFinancials' =>
+                $currentMonthFinancials,
+
+            'monthlyFinancials' =>
+                $monthlyFinancials,
+
+            'lossMakingProjects' =>
+                $lossMakingProjects,
+
+            'cashNegativeProjects' =>
+                $cashNegativeProjects,
         ]);
     }
 }
