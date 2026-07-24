@@ -121,11 +121,18 @@ class ProjectActivity extends Model
             'note_created',
             'work_logged',
             'attachment_uploaded',
-            'history_initialized' =>
+            'history_initialized',
+            'ticket_created',
+            'ticket_comment_added',
+            'ticket_first_response' =>
                 'bg-emerald-50 text-emerald-700',
 
             'updated',
-            'status_changed' =>
+            'status_changed',
+            'ticket_updated',
+            'ticket_assigned',
+            'ticket_status_changed',
+            'ticket_comment_updated' =>
                 'bg-blue-50 text-blue-700',
 
             'pinned' =>
@@ -134,12 +141,20 @@ class ProjectActivity extends Model
             'unpinned' =>
                 'bg-slate-100 text-slate-700',
 
-            'deleted',
-            'attachment_deleted' =>
-                'bg-red-50 text-red-700',
+            'ticket_resolved' =>
+                'bg-emerald-100 text-emerald-800',
 
+            'ticket_reopened',
             'attachment_downloaded' =>
                 'bg-violet-50 text-violet-700',
+
+            'ticket_escalated' =>
+                'bg-red-600 text-white',
+
+            'deleted',
+            'attachment_deleted',
+            'ticket_comment_deleted' =>
+                'bg-red-50 text-red-700',
 
             default =>
                 'bg-slate-100 text-slate-700',

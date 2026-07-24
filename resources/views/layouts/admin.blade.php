@@ -259,6 +259,54 @@
                 </a>
             @endcan
 
+
+            {{-- Tickets --}}
+            @can('tickets.view')
+                <a
+                    href="{{ route('tickets.index') }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{ request()->routeIs('tickets.*')
+                            ? 'bg-white/10 text-white'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                >
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5">
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M4 5h16v14H4z"/>
+                            <path d="M8 9h8M8 13h5"/>
+                        </svg>
+                    </span>
+
+                    <span x-show="!sidebarCollapsed">
+                        Tickets
+                    </span>
+                </a>
+            @endcan
+
+            {{-- Ticket Escalations --}}
+            @can('tickets.view-escalations')
+                <a
+                    href="{{ route('tickets.escalations') }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{ request()->routeIs('tickets.escalations')
+                            ? 'bg-white/10 text-white'
+                            : 'text-slate-400 hover:bg-white/5 hover:text-white' }}"
+                >
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-300">
+                        !
+                    </span>
+
+                    <span x-show="!sidebarCollapsed">
+                        Ticket Escalations
+                    </span>
+                </a>
+            @endcan
+
             {{-- Payments --}}
             @can('payments.view')
                 <a

@@ -8,6 +8,7 @@ use App\Enums\PaymentFollowupStatus;
 use App\Enums\PaymentKind;
 use App\Enums\ProjectStatus;
 use App\Enums\TaskStatus;
+use App\Enums\TicketStatus;
 use App\Models\Client;
 use App\Models\Expense;
 use App\Models\Payment;
@@ -17,6 +18,7 @@ use App\Models\ProjectActivity;
 use App\Models\ProjectApproval;
 use App\Models\ProjectNote;
 use App\Models\ProjectTask;
+use App\Models\ProjectTicket;
 use App\Models\ProjectWorkLog;
 use App\Models\SystemSetting;
 use App\Services\Reports\ProfitabilityReportService;
@@ -496,6 +498,109 @@ class DashboardController extends Controller
             ->where('is_pinned', true)
             ->count();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Phase 7 Ticket Statistics
+        |--------------------------------------------------------------------------
+        */
+
+        $ticketStats = [
+            'open' =>
+                ProjectTicket::query()
+                    ->open()
+                    ->count(),
+
+            'assigned_to_me' =>
+                ProjectTicket::query()
+                    ->open()
+                    ->where(
+                        'assigned_to',
+                        $user->id
+                    )
+                    ->count(),
+
+            'unassigned' =>
+                ProjectTicket::query()
+                    ->open()
+                    ->whereNull('assigned_to')
+                    ->count(),
+
+            'escalated' =>
+                ProjectTicket::query()
+                    ->open()
+                    ->where(
+                        'escalation_level',
+                        '>',
+                        0
+                    )
+                    ->count(),
+
+            'critical' =>
+                ProjectTicket::query()
+                    ->open()
+                    ->where(
+                        'priority',
+                        \App\Enums\TicketPriority::Critical
+                            ->value
+                    )
+                    ->count(),
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Phase 7 SLA Risk Tickets
+        |--------------------------------------------------------------------------
+        */
+
+        $slaRiskTickets = ProjectTicket::query()
+            ->with([
+                'project.client',
+                'assignedTo',
+            ])
+            ->open()
+            ->whereNotIn(
+                'status',
+                [
+                    TicketStatus::PendingClient->value,
+                    TicketStatus::OnHold->value,
+                ]
+            )
+            ->where(
+                function ($query): void {
+                    $query
+                        ->where(
+                            'escalation_level',
+                            '>',
+                            0
+                        )
+                        ->orWhere(
+                            'resolution_due_at',
+                            '<=',
+                            now()->addHours(4)
+                        );
+                }
+            )
+            ->orderByDesc('escalation_level')
+            ->orderBy('resolution_due_at')
+            ->limit(8)
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Phase 7 Recent Tickets
+        |--------------------------------------------------------------------------
+        */
+
+        $recentTickets = ProjectTicket::query()
+            ->with([
+                'project',
+                'assignedTo',
+            ])
+            ->latest('created_at')
+            ->limit(8)
+            ->get();
+
         /*
         |--------------------------------------------------------------------------
         | Dashboard View
@@ -549,6 +654,16 @@ class DashboardController extends Controller
 
             'projectInactivityDays' =>
                 $projectInactivityDays,
+
+            'ticketStats' =>
+                $ticketStats,
+
+            'slaRiskTickets' =>
+                $slaRiskTickets,
+
+            'recentTickets' =>
+                $recentTickets,
         ]);
     }
 }
+

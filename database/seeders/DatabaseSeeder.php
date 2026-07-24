@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             ProjectCategorySeeder::class,
             ProjectTemplateSeeder::class,
             ExpenseCategorySeeder::class,
+            TicketSlaPolicySeeder::class,
         ]);
     }
 }

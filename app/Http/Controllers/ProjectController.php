@@ -544,6 +544,71 @@ class ProjectController extends Controller
             )
             ->withQueryString();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Phase 7 Project Tickets
+        |--------------------------------------------------------------------------
+        */
+
+        $projectTickets = $project
+            ->tickets()
+            ->with([
+                'assignedTo',
+                'createdBy',
+            ])
+            ->withCount('comments')
+            ->paginate(
+                15,
+                ['*'],
+                'tickets_page'
+            )
+            ->withQueryString();
+
+        $ticketSummary = [
+            'total' =>
+                $project->tickets()->count(),
+
+            'open' =>
+                $project
+                    ->tickets()
+                    ->open()
+                    ->count(),
+
+            'unassigned' =>
+                $project
+                    ->tickets()
+                    ->open()
+                    ->whereNull('assigned_to')
+                    ->count(),
+
+            'escalated' =>
+                $project
+                    ->tickets()
+                    ->open()
+                    ->where(
+                        'escalation_level',
+                        '>',
+                        0
+                    )
+                    ->count(),
+
+            'resolved' =>
+                $project
+                    ->tickets()
+                    ->whereIn(
+                        'status',
+                        [
+                            \App\Enums\TicketStatus::Resolved
+                                ->value,
+
+                            \App\Enums\TicketStatus::Closed
+                                ->value,
+                        ]
+                    )
+                    ->count(),
+        ];
+
         /*
         |--------------------------------------------------------------------------
         | Work Log Summary
@@ -759,6 +824,24 @@ class ProjectController extends Controller
             */
 
             'attachments' => $attachments,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Phase 7 Ticket Data
+            |--------------------------------------------------------------------------
+            */
+
+            'projectTickets' =>
+                $projectTickets,
+
+            'ticketSummary' =>
+                $ticketSummary,
+
+            'ticketPriorities' =>
+                \App\Enums\TicketPriority::cases(),
+
+            'ticketStatuses' =>
+                \App\Enums\TicketStatus::cases(),
         ]);
     }
 
@@ -926,3 +1009,4 @@ class ProjectController extends Controller
             ->sync($syncData);
     }
 }
+

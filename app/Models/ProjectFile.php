@@ -130,6 +130,10 @@ class ProjectFile extends Model
             'work_log' =>
                 $user->can('work-logs.view'),
 
+            'ticket',
+            'ticket_comment' =>
+                $user->can('tickets.view'),
+
             'note' =>
                 $this->linkedNotesAreVisibleTo($user),
 

@@ -137,4 +137,36 @@ class User extends Authenticatable implements MustVerifyEmail
             'voided_by'
         );
     }
+
+    public function createdTickets(): HasMany
+    {
+        return $this->hasMany(
+            ProjectTicket::class,
+            'created_by'
+        );
+    }
+
+    public function assignedTickets(): HasMany
+    {
+        return $this->hasMany(
+            ProjectTicket::class,
+            'assigned_to'
+        );
+    }
+
+    public function ticketComments(): HasMany
+    {
+        return $this->hasMany(
+            TicketComment::class,
+            'created_by'
+        );
+    }
+
+    public function acknowledgedTicketEscalations(): HasMany
+    {
+        return $this->hasMany(
+            TicketEscalation::class,
+            'acknowledged_by'
+        );
+    }
 }

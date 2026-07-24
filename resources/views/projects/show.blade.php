@@ -138,6 +138,7 @@
                 @foreach ([
                     'overview' => 'Overview',
                     'tasks' => 'Tasks',
+                    'tickets' => 'Tickets',
                     'approvals' => 'Approvals',
                     'payments' => 'Payments',
                     'expenses' => 'Expenses & Profit',
@@ -415,6 +416,9 @@
 
         {{-- Tasks tab partial --}}
         @include('projects.partials.tasks-tab')
+
+        {{-- Phase 7 Tickets tab partial --}}
+        @include('projects.partials.tickets-tab')
 
         {{-- Approvals tab partial --}}
         @include('projects.partials.approvals-tab')

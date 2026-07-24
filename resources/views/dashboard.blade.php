@@ -289,6 +289,93 @@
             </article>
         </section>
 
+
+        {{-- Phase 7 ticket statistics --}}
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            @foreach ([
+                ['Open Tickets', $ticketStats['open'], 'border-blue-200 bg-blue-50'],
+                ['Assigned to Me', $ticketStats['assigned_to_me'], 'border-indigo-200 bg-indigo-50'],
+                ['Unassigned', $ticketStats['unassigned'], 'border-amber-200 bg-amber-50'],
+                ['Escalated', $ticketStats['escalated'], 'border-red-200 bg-red-50'],
+                ['Critical', $ticketStats['critical'], 'border-violet-200 bg-violet-50'],
+            ] as [$label, $value, $classes])
+                <article class="rounded-3xl border p-5 shadow-sm {{ $classes }}">
+                    <p class="text-sm font-medium text-slate-600">
+                        {{ $label }}
+                    </p>
+
+                    <p class="mt-2 text-3xl font-black text-slate-950">
+                        {{ $value }}
+                    </p>
+                </article>
+            @endforeach
+        </section>
+
+        {{-- Phase 7 SLA risk panel --}}
+        <section class="overflow-hidden rounded-3xl border border-red-200 bg-white shadow-sm">
+            <div class="flex items-center justify-between border-b border-red-100 bg-red-50 p-5">
+                <div>
+                    <h3 class="font-black text-red-950">
+                        Tickets at SLA Risk
+                    </h3>
+
+                    <p class="mt-1 text-sm text-red-700">
+                        Escalated tickets and tickets approaching resolution deadline.
+                    </p>
+                </div>
+
+                @can('tickets.view-escalations')
+                    <a
+                        href="{{ route('tickets.escalations') }}"
+                        class="text-sm font-bold text-red-700"
+                    >
+                        View Escalations
+                    </a>
+                @endcan
+            </div>
+
+            <div class="divide-y divide-slate-100">
+                @forelse ($slaRiskTickets as $ticket)
+                    <a
+                        href="{{ route('tickets.show', $ticket) }}"
+                        class="block p-5 transition hover:bg-red-50/40"
+                    >
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="font-bold text-slate-950">
+                                    {{ $ticket->subject }}
+                                </p>
+
+                                <p class="mt-1 text-xs text-slate-500">
+                                    {{ $ticket->ticket_number }}
+                                    · {{ $ticket->project->name }}
+                                    · {{ $ticket->assignedTo?->name ?? 'Unassigned' }}
+                                </p>
+                            </div>
+
+                            <div class="text-right">
+                                @if ($ticket->escalation_level > 0)
+                                    <span class="rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white">
+                                        Level {{ $ticket->escalation_level }}
+                                    </span>
+                                @endif
+
+                                <p class="mt-2 text-xs font-bold text-red-700">
+                                    {{ $ticket->current_sla_due_at?->diffForHumans() }}
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                @empty
+                    <div class="p-10 text-center">
+                        <p class="font-bold text-emerald-700">
+                            No tickets are currently at SLA risk.
+                        </p>
+                    </div>
+                @endforelse
+            </div>
+        </section>
+
         {{-- Phase 6 work logs, pinned notes and project activity statistics --}}
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <article class="rounded-3xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm">
@@ -1433,4 +1520,3 @@
         </section>
     </div>
 @endsection
-

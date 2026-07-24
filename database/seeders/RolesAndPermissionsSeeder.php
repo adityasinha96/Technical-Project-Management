@@ -198,6 +198,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'tickets.create',
             'tickets.update',
             'tickets.assign',
+            'tickets.comment',
+            'tickets.respond',
+            'tickets.resolve',
+            'tickets.reopen',
+            'tickets.manage-all',
+            'tickets.manage-sla',
+            'tickets.view-escalations',
+            'tickets.acknowledge-escalation',
             'tickets.close',
             'tickets.delete',
 
@@ -343,6 +351,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'tickets.create',
             'tickets.update',
             'tickets.assign',
+            'tickets.comment',
+            'tickets.respond',
+            'tickets.resolve',
+            'tickets.reopen',
+            'tickets.manage-all',
+            'tickets.view-escalations',
+            'tickets.acknowledge-escalation',
             'tickets.close',
 
             'reports.view',
@@ -393,6 +408,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'expenses.delete',
 
             'expense-categories.manage',
+
+            'tickets.view',
+            'tickets.create',
+            'tickets.comment',
+            'tickets.respond',
 
             'reports.view',
             'reports.export',
@@ -447,6 +467,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'tickets.view',
             'tickets.create',
             'tickets.update',
+            'tickets.comment',
+            'tickets.respond',
+            'tickets.resolve',
         ]);
 
         /*
@@ -495,3 +518,4 @@ class RolesAndPermissionsSeeder extends Seeder
             ->forgetCachedPermissions();
     }
 }
+

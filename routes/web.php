@@ -16,6 +16,10 @@ use App\Http\Controllers\ProjectNoteController;
 use App\Http\Controllers\ProjectTaskController;
 use App\Http\Controllers\ProjectTemplateController;
 use App\Http\Controllers\ProjectWorkLogController;
+use App\Http\Controllers\TicketCommentController;
+use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TicketEscalationController;
+use App\Http\Controllers\TicketSlaPolicyController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -404,6 +408,150 @@ Route::middleware([
         ->middleware('can:attachments.delete')
         ->name('projects.attachments.destroy');
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ticket Escalation and SLA Configuration
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/tickets/escalations',
+        [TicketEscalationController::class, 'index']
+    )
+        ->middleware(
+            'can:tickets.view-escalations'
+        )
+        ->name('tickets.escalations');
+
+    Route::put(
+        '/tickets/{ticket}/escalations/{ticketEscalation}/acknowledge',
+        [
+            TicketEscalationController::class,
+            'acknowledge',
+        ]
+    )
+        ->middleware(
+            'can:tickets.acknowledge-escalation'
+        )
+        ->name(
+            'tickets.escalations.acknowledge'
+        );
+
+    Route::get(
+        '/ticket-sla-policies',
+        [TicketSlaPolicyController::class, 'index']
+    )
+        ->middleware(
+            'can:tickets.manage-sla'
+        )
+        ->name('ticket-sla-policies.index');
+
+    Route::put(
+        '/ticket-sla-policies/{ticketSlaPolicy}',
+        [TicketSlaPolicyController::class, 'update']
+    )
+        ->middleware(
+            'can:tickets.manage-sla'
+        )
+        ->name('ticket-sla-policies.update');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Project Tickets
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/tickets',
+        [TicketController::class, 'index']
+    )
+        ->middleware('can:tickets.view')
+        ->name('tickets.index');
+
+    Route::get(
+        '/tickets/create',
+        [TicketController::class, 'create']
+    )
+        ->middleware('can:tickets.create')
+        ->name('tickets.create');
+
+    Route::post(
+        '/tickets',
+        [TicketController::class, 'store']
+    )
+        ->middleware('can:tickets.create')
+        ->name('tickets.store');
+
+    Route::get(
+        '/tickets/{ticket}',
+        [TicketController::class, 'show']
+    )
+        ->middleware('can:tickets.view')
+        ->name('tickets.show');
+
+    Route::put(
+        '/tickets/{ticket}',
+        [TicketController::class, 'update']
+    )
+        ->middleware('can:tickets.update')
+        ->name('tickets.update');
+
+    Route::put(
+        '/tickets/{ticket}/assign',
+        [TicketController::class, 'assign']
+    )
+        ->middleware('can:tickets.assign')
+        ->name('tickets.assign');
+
+    Route::put(
+        '/tickets/{ticket}/transition',
+        [TicketController::class, 'transition']
+    )
+        ->middleware('can:tickets.update')
+        ->name('tickets.transition');
+
+    Route::put(
+        '/tickets/{ticket}/resolve',
+        [TicketController::class, 'resolve']
+    )
+        ->middleware('can:tickets.resolve')
+        ->name('tickets.resolve');
+
+    Route::put(
+        '/tickets/{ticket}/reopen',
+        [TicketController::class, 'reopen']
+    )
+        ->middleware('can:tickets.reopen')
+        ->name('tickets.reopen');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ticket Discussion
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/tickets/{ticket}/comments',
+        [TicketCommentController::class, 'store']
+    )
+        ->middleware('can:tickets.comment')
+        ->name('tickets.comments.store');
+
+    Route::put(
+        '/tickets/{ticket}/comments/{ticketComment}',
+        [TicketCommentController::class, 'update']
+    )
+        ->middleware('can:tickets.comment')
+        ->name('tickets.comments.update');
+
+    Route::delete(
+        '/tickets/{ticket}/comments/{ticketComment}',
+        [TicketCommentController::class, 'destroy']
+    )
+        ->middleware('can:tickets.comment')
+        ->name('tickets.comments.destroy');
+
     /*
     |--------------------------------------------------------------------------
     | Payments and Outstanding Balance
@@ -596,3 +744,4 @@ Route::middleware([
         ->middleware('can:reports.profitability')
         ->name('profitability.index');
 });
+

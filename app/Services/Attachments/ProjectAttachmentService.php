@@ -196,6 +196,8 @@ class ProjectAttachmentService
                     'general',
                     'note',
                     'work_log',
+                    'ticket',
+                    'ticket_comment',
                 ],
                 true
             ),

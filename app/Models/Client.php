@@ -94,4 +94,11 @@ class Client extends Model
     {
         return $this->hasMany(PaymentFollowup::class);
     }
+
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(
+            ProjectTicket::class
+        );
+    }
 }

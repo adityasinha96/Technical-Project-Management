@@ -133,6 +133,8 @@ class ProjectAttachmentController extends Controller
                         'general',
                         'note',
                         'work_log',
+                        'ticket',
+                        'ticket_comment',
                     ],
                     true
                 )

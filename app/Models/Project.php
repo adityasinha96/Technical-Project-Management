@@ -643,4 +643,11 @@ class Project extends Model
             ->latest('submitted_at')
             ->first();
     }
+
+    public function tickets(): HasMany
+    {
+        return $this
+            ->hasMany(ProjectTicket::class)
+            ->latest('created_at');
+    }
 }
