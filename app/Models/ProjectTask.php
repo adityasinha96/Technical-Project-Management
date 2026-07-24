@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsProjectActivity;
 use App\Enums\ProjectPriority;
 use App\Enums\TaskPhase;
 use App\Enums\TaskStatus;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProjectTask extends Model
 {
+    use LogsProjectActivity;
     use SoftDeletes;
 
     protected $fillable = [
@@ -52,6 +54,12 @@ class ProjectTask extends Model
         ];
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
@@ -81,23 +89,70 @@ class ProjectTask extends Model
         );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Project activity logging configuration
+    |--------------------------------------------------------------------------
+    */
+
+    public function activityTrackedAttributes(): array
+    {
+        return [
+            'title',
+            'assigned_to',
+            'phase',
+            'priority',
+            'status',
+            'weight',
+            'progress',
+            'start_date',
+            'due_date',
+            'completed_at',
+            'blocked_reason',
+        ];
+    }
+
+    public function activityLabel(): string
+    {
+        return "Task: {$this->title}";
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Task helpers
+    |--------------------------------------------------------------------------
+    */
+
     public function getIsOverdueAttribute(): bool
     {
         if (
             !$this->due_date ||
-            in_array($this->status, [
-                TaskStatus::Completed,
-                TaskStatus::Cancelled,
-            ], true)
+            in_array(
+                $this->status,
+                [
+                    TaskStatus::Completed,
+                    TaskStatus::Cancelled,
+                ],
+                true
+            )
         ) {
             return false;
         }
 
-        return $this->due_date->isBefore(today());
+        return $this->due_date->isBefore(
+            today()
+        );
     }
 
-    public function scopeActive(Builder $query): Builder
-    {
+    /*
+    |--------------------------------------------------------------------------
+    | Query scopes
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeActive(
+        Builder $query
+    ): Builder {
         return $query->where(
             'status',
             '!=',

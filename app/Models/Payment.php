@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsProjectActivity;
+use App\Enums\ActivityVisibility;
 use App\Enums\PaymentKind;
 use App\Enums\PaymentMode;
 use App\Enums\PaymentStatus;
@@ -12,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
+    use LogsProjectActivity;
+
     protected $fillable = [
         'payment_number',
         'project_id',
@@ -54,6 +58,12 @@ class Payment extends Model
         ];
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
@@ -88,8 +98,46 @@ class Payment extends Model
         );
     }
 
-    public function scopeEffective(Builder $query): Builder
+    /*
+    |--------------------------------------------------------------------------
+    | Project activity logging configuration
+    |--------------------------------------------------------------------------
+    */
+
+    public function activityTrackedAttributes(): array
     {
+        return [
+            'kind',
+            'payment_type',
+            'payment_mode',
+            'status',
+            'amount',
+            'payment_date',
+            'transaction_reference',
+            'voided_at',
+            'void_reason',
+        ];
+    }
+
+    public function activityLabel(): string
+    {
+        return "Payment: {$this->payment_number}";
+    }
+
+    public function activityVisibility(): ActivityVisibility
+    {
+        return ActivityVisibility::Financial;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Query scopes
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeEffective(
+        Builder $query
+    ): Builder {
         return $query
             ->where(
                 'status',
@@ -98,16 +146,18 @@ class Payment extends Model
             ->whereNull('voided_at');
     }
 
-    public function scopeReceipts(Builder $query): Builder
-    {
+    public function scopeReceipts(
+        Builder $query
+    ): Builder {
         return $query->where(
             'kind',
             PaymentKind::Receipt->value
         );
     }
 
-    public function scopeRefunds(Builder $query): Builder
-    {
+    public function scopeRefunds(
+        Builder $query
+    ): Builder {
         return $query->where(
             'kind',
             PaymentKind::Refund->value
@@ -169,6 +219,12 @@ class Payment extends Model
             }
         );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment helpers
+    |--------------------------------------------------------------------------
+    */
 
     public function getIsVoidedAttribute(): bool
     {

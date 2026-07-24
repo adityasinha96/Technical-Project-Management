@@ -12,17 +12,25 @@ use App\Enums\PaymentKind;
 use App\Enums\PaymentMode;
 use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
+use App\Enums\ProjectNoteType;
+use App\Enums\ProjectNoteVisibility;
 use App\Enums\ProjectPriority;
 use App\Enums\ProjectStatus;
 use App\Enums\TaskPhase;
 use App\Enums\TaskStatus;
+use App\Enums\WorkLogStatus;
+use App\Enums\WorkLogType;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Client;
 use App\Models\ExpenseCategory;
 use App\Models\Project;
+use App\Models\ProjectActivity;
 use App\Models\ProjectCategory;
+use App\Models\ProjectFile;
+use App\Models\ProjectNote;
 use App\Models\ProjectTemplate;
+use App\Models\ProjectWorkLog;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Projects\ProjectTemplateService;
@@ -360,6 +368,27 @@ class ProjectController extends Controller
 
             /*
             |--------------------------------------------------------------------------
+            | Phase 6 Notes
+            |--------------------------------------------------------------------------
+            */
+
+            'notes.createdBy',
+            'notes.updatedBy',
+            'notes.pinnedBy',
+            'notes.fileLinks.file',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Phase 6 Work Logs
+            |--------------------------------------------------------------------------
+            */
+
+            'workLogs.loggedBy',
+            'workLogs.task',
+            'workLogs.fileLinks.file',
+
+            /*
+            |--------------------------------------------------------------------------
             | Files and audit information
             |--------------------------------------------------------------------------
             */
@@ -368,6 +397,224 @@ class ProjectController extends Controller
             'createdBy',
             'updatedBy',
         ]);
+
+        $user = request()->user();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Visible Project Notes
+        |--------------------------------------------------------------------------
+        */
+
+        $notes = $project
+            ->notes()
+            ->visibleTo($user)
+            ->with([
+                'createdBy',
+                'updatedBy',
+                'pinnedBy',
+                'fileLinks.file',
+            ])
+            ->orderByDesc('is_pinned')
+            ->latest('created_at')
+            ->paginate(
+                20,
+                ['*'],
+                'notes_page'
+            )
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pinned Project Notes
+        |--------------------------------------------------------------------------
+        */
+
+        $pinnedNotes = $project
+            ->notes()
+            ->visibleTo($user)
+            ->where('is_pinned', true)
+            ->with([
+                'createdBy',
+                'fileLinks.file',
+            ])
+            ->latest('pinned_at')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Work Logs
+        |--------------------------------------------------------------------------
+        */
+
+        $workLogs = $project
+            ->workLogs()
+            ->with([
+                'loggedBy',
+                'task',
+                'fileLinks.file',
+            ])
+            ->latest('work_date')
+            ->latest('id')
+            ->paginate(
+                20,
+                ['*'],
+                'work_logs_page'
+            )
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Activity Timeline
+        |--------------------------------------------------------------------------
+        */
+
+        $activities = $project
+            ->activities()
+            ->visibleTo($user)
+            ->with('actor')
+            ->when(
+                request()->filled('activity_event'),
+                fn ($query) =>
+                    $query->where(
+                        'event',
+                        request()
+                            ->string('activity_event')
+                            ->toString()
+                    )
+            )
+            ->when(
+                request()->filled('activity_actor'),
+                fn ($query) =>
+                    $query->where(
+                        'actor_id',
+                        request()->integer(
+                            'activity_actor'
+                        )
+                    )
+            )
+            ->when(
+                request()->filled('activity_from'),
+                fn ($query) =>
+                    $query->whereDate(
+                        'occurred_at',
+                        '>=',
+                        request()->date(
+                            'activity_from'
+                        )
+                    )
+            )
+            ->when(
+                request()->filled('activity_to'),
+                fn ($query) =>
+                    $query->whereDate(
+                        'occurred_at',
+                        '<=',
+                        request()->date(
+                            'activity_to'
+                        )
+                    )
+            )
+            ->latest('occurred_at')
+            ->latest('id')
+            ->paginate(
+                30,
+                ['*'],
+                'activity_page'
+            )
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Project Attachments
+        |--------------------------------------------------------------------------
+        */
+
+        $attachments = $project
+            ->files()
+            ->with([
+                'uploadedBy',
+                'links.fileable',
+            ])
+            ->latest('created_at')
+            ->paginate(
+                24,
+                ['*'],
+                'attachments_page'
+            )
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Work Log Summary
+        |--------------------------------------------------------------------------
+        */
+
+        $workLogSummary = [
+            'total_minutes' =>
+                $project
+                    ->workLogs()
+                    ->reorder()
+                    ->sum('duration_minutes'),
+
+            'current_month_minutes' =>
+                $project
+                    ->workLogs()
+                    ->reorder()
+                    ->whereBetween('work_date', [
+                        now()
+                            ->startOfMonth()
+                            ->toDateString(),
+
+                        now()
+                            ->endOfMonth()
+                            ->toDateString(),
+                    ])
+                    ->sum('duration_minutes'),
+
+            'my_minutes' =>
+                $project
+                    ->workLogs()
+                    ->reorder()
+                    ->where(
+                        'logged_by',
+                        $user->id
+                    )
+                    ->sum('duration_minutes'),
+
+            'log_count' =>
+                $project
+                    ->workLogs()
+                    ->reorder()
+                    ->count(),
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Activity Filter Options
+        |--------------------------------------------------------------------------
+        */
+
+        $activityUsers = User::query()
+            ->whereIn(
+                'id',
+                $project
+                    ->activities()
+                    ->reorder()
+                    ->whereNotNull('actor_id')
+                    ->distinct()
+                    ->pluck('actor_id')
+            )
+            ->orderBy('name')
+            ->get();
+
+        $activityEvents = $project
+            ->activities()
+            ->reorder()
+            ->visibleTo($user)
+            ->distinct()
+            ->orderBy('event')
+            ->pluck('event');
 
         return view('projects.show', [
             'project' => $project,
@@ -458,6 +705,60 @@ class ProjectController extends Controller
 
             'expensePaymentModes' =>
                 PaymentMode::cases(),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Phase 6 Note Data
+            |--------------------------------------------------------------------------
+            */
+
+            'notes' => $notes,
+            'pinnedNotes' => $pinnedNotes,
+
+            'noteTypes' =>
+                ProjectNoteType::cases(),
+
+            'noteVisibilities' =>
+                ProjectNoteVisibility::cases(),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Phase 6 Work Log Data
+            |--------------------------------------------------------------------------
+            */
+
+            'workLogs' => $workLogs,
+
+            'workLogSummary' =>
+                $workLogSummary,
+
+            'workLogTypes' =>
+                WorkLogType::cases(),
+
+            'workLogStatuses' =>
+                WorkLogStatus::cases(),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Phase 6 Activity Timeline Data
+            |--------------------------------------------------------------------------
+            */
+
+            'activities' => $activities,
+
+            'activityUsers' =>
+                $activityUsers,
+
+            'activityEvents' =>
+                $activityEvents,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Phase 6 Attachment Data
+            |--------------------------------------------------------------------------
+            */
+
+            'attachments' => $attachments,
         ]);
     }
 

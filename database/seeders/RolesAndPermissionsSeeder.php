@@ -112,6 +112,40 @@ class RolesAndPermissionsSeeder extends Seeder
             'notes.create',
             'notes.update',
             'notes.delete',
+            'notes.pin',
+            'notes.manage',
+            'notes.view-sensitive',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Project Work Logs
+            |--------------------------------------------------------------------------
+            */
+
+            'work-logs.view',
+            'work-logs.create',
+            'work-logs.update',
+            'work-logs.delete',
+            'work-logs.manage',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Project Activities
+            |--------------------------------------------------------------------------
+            */
+
+            'activities.view',
+            'activities.view-sensitive',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Project Attachments
+            |--------------------------------------------------------------------------
+            */
+
+            'attachments.view',
+            'attachments.upload',
+            'attachments.delete',
 
             /*
             |--------------------------------------------------------------------------
@@ -242,8 +276,8 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         |
         | Project managers can manage clients, projects, tasks, approvals,
-        | project documents, payment visibility, collection follow-ups,
-        | operational expenses and profitability reports.
+        | notes, work logs, project activities, attachments, payment visibility,
+        | collection follow-ups, operational expenses and profitability reports.
         |
         | Project managers cannot delete expense records or manage expense
         | categories.
@@ -278,6 +312,22 @@ class RolesAndPermissionsSeeder extends Seeder
             'notes.create',
             'notes.update',
             'notes.delete',
+            'notes.pin',
+            'notes.manage',
+            'notes.view-sensitive',
+
+            'work-logs.view',
+            'work-logs.create',
+            'work-logs.update',
+            'work-logs.delete',
+            'work-logs.manage',
+
+            'activities.view',
+            'activities.view-sensitive',
+
+            'attachments.view',
+            'attachments.upload',
+            'attachments.delete',
 
             'payments.view',
 
@@ -307,6 +357,9 @@ class RolesAndPermissionsSeeder extends Seeder
         | Accounts users can manage payments, payment follow-ups, expenses,
         | expense categories and financial profitability reports.
         |
+        | Accounts users can also view project notes, view sensitive timeline
+        | activity, and view or upload project attachments.
+        |
         */
 
         $accounts->syncPermissions([
@@ -315,6 +368,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'clients.view',
 
             'projects.view',
+
+            'notes.view',
+
+            'activities.view',
+            'activities.view-sensitive',
+
+            'attachments.view',
+            'attachments.upload',
 
             'payments.view',
             'payments.create',
@@ -343,8 +404,11 @@ class RolesAndPermissionsSeeder extends Seeder
         | Team Member Permissions
         |--------------------------------------------------------------------------
         |
-        | Team members can work on assigned projects, tasks, files, notes
-        | and tickets.
+        | Team members can work on assigned projects, tasks, files, notes,
+        | work logs, activities and tickets.
+        |
+        | Team members can update and delete only their own notes and work
+        | logs because ownership is enforced by the relevant controllers.
         |
         | Expense records, payment records and profitability reports remain
         | restricted.
@@ -368,6 +432,17 @@ class RolesAndPermissionsSeeder extends Seeder
             'notes.view',
             'notes.create',
             'notes.update',
+            'notes.delete',
+
+            'work-logs.view',
+            'work-logs.create',
+            'work-logs.update',
+            'work-logs.delete',
+
+            'activities.view',
+
+            'attachments.view',
+            'attachments.upload',
 
             'tickets.view',
             'tickets.create',

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsProjectActivity;
 use App\Enums\ApprovalStage;
 use App\Enums\ApprovalStatus;
 use App\Enums\ProjectPriority;
@@ -14,12 +15,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Project extends Model
 {
     use HasFactory;
     use SoftDeletes;
+    use LogsProjectActivity;
 
     protected $fillable = [
         'project_code',
@@ -78,6 +81,13 @@ class Project extends Model
         'project_template_id',
         'internal_progress',
 
+        /*
+        |--------------------------------------------------------------------------
+        | Phase 6 activity fields
+        |--------------------------------------------------------------------------
+        */
+        'last_activity_at',
+
         'created_by',
         'updated_by',
     ];
@@ -114,6 +124,13 @@ class Project extends Model
             'actual_completion_date' => 'date',
             'domain_expiry_date' => 'date',
             'hosting_expiry_date' => 'date',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Phase 6 activity casts
+            |--------------------------------------------------------------------------
+            */
+            'last_activity_at' => 'datetime',
 
             'status' => ProjectStatus::class,
             'priority' => ProjectPriority::class,
@@ -217,6 +234,77 @@ class Project extends Model
             ->hasMany(Expense::class)
             ->latest('expense_date')
             ->latest('id');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Phase 6 notes, work logs and activity relationships
+    |--------------------------------------------------------------------------
+    */
+
+    public function notes(): HasMany
+    {
+        return $this
+            ->hasMany(ProjectNote::class)
+            ->latest('created_at');
+    }
+
+    public function workLogs(): HasMany
+    {
+        return $this
+            ->hasMany(ProjectWorkLog::class)
+            ->latest('work_date')
+            ->latest('id');
+    }
+
+    public function activities(): HasMany
+    {
+        return $this
+            ->hasMany(ProjectActivity::class)
+            ->latest('occurred_at')
+            ->latest('id');
+    }
+
+    public function fileLinks(): MorphMany
+    {
+        return $this->morphMany(
+            ProjectFileLink::class,
+            'fileable'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Phase 6 activity tracking configuration
+    |--------------------------------------------------------------------------
+    */
+
+    public function activityProjectId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function activityLabel(): string
+    {
+        return "Project: {$this->name}";
+    }
+
+    public function activityTrackedAttributes(): array
+    {
+        return [
+            'name',
+            'client_id',
+            'project_category_id',
+            'manager_id',
+            'status',
+            'priority',
+            'project_price',
+            'start_date',
+            'expected_delivery_date',
+            'official_progress',
+            'internal_progress',
+            'actual_completion_date',
+        ];
     }
 
     /*
@@ -399,7 +487,7 @@ class Project extends Model
 
     /*
     |--------------------------------------------------------------------------
-       | Query scopes
+    | Query scopes
     |--------------------------------------------------------------------------
     */
 

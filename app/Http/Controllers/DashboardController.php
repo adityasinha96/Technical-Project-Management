@@ -13,8 +13,12 @@ use App\Models\Expense;
 use App\Models\Payment;
 use App\Models\PaymentFollowup;
 use App\Models\Project;
+use App\Models\ProjectActivity;
 use App\Models\ProjectApproval;
+use App\Models\ProjectNote;
 use App\Models\ProjectTask;
+use App\Models\ProjectWorkLog;
+use App\Models\SystemSetting;
 use App\Services\Reports\ProfitabilityReportService;
 use Illuminate\Contracts\View\View;
 
@@ -27,6 +31,27 @@ class DashboardController extends Controller
 
     public function index(): View
     {
+        $user = request()->user();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Phase 6 Dashboard Configuration
+        |--------------------------------------------------------------------------
+        */
+
+        $projectInactivityDays = max(
+            1,
+            (int) (
+                SystemSetting::query()
+                    ->where(
+                        'key',
+                        'project_inactivity_days'
+                    )
+                    ->value('value')
+                ?: 3
+            )
+        );
+
         /*
         |--------------------------------------------------------------------------
         | Profitability Report Summaries
@@ -368,6 +393,111 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Recent Visible Project Activities
+        |--------------------------------------------------------------------------
+        */
+
+        $recentActivities = ProjectActivity::query()
+            ->visibleTo($user)
+            ->with([
+                'project',
+                'actor',
+            ])
+            ->latest('occurred_at')
+            ->limit(10)
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Inactive Projects
+        |--------------------------------------------------------------------------
+        */
+
+        $inactiveProjects = Project::query()
+            ->with([
+                'client',
+                'manager',
+            ])
+            ->whereNotIn(
+                'status',
+                [
+                    ProjectStatus::Completed->value,
+                    ProjectStatus::Cancelled->value,
+                ]
+            )
+            ->where(
+                function ($query) use (
+                    $projectInactivityDays
+                ): void {
+                    $cutoff = now()
+                        ->subDays(
+                            $projectInactivityDays
+                        );
+
+                    $query
+                        ->where(
+                            'last_activity_at',
+                            '<',
+                            $cutoff
+                        )
+                        ->orWhere(
+                            function ($query) use ($cutoff): void {
+                                $query
+                                    ->whereNull(
+                                        'last_activity_at'
+                                    )
+                                    ->where(
+                                        'created_at',
+                                        '<',
+                                        $cutoff
+                                    );
+                            }
+                        );
+                }
+            )
+            ->orderByRaw(
+                'COALESCE(last_activity_at, created_at) ASC'
+            )
+            ->limit(8)
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Today Work Log Statistics
+        |--------------------------------------------------------------------------
+        */
+
+        $todayWorkMinutes = ProjectWorkLog::query()
+            ->whereDate(
+                'work_date',
+                today()
+            )
+            ->sum('duration_minutes');
+
+        $myTodayWorkMinutes = ProjectWorkLog::query()
+            ->whereDate(
+                'work_date',
+                today()
+            )
+            ->where(
+                'logged_by',
+                $user->id
+            )
+            ->sum('duration_minutes');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pinned Project Notes
+        |--------------------------------------------------------------------------
+        */
+
+        $pinnedNoteCount = ProjectNote::query()
+            ->visibleTo($user)
+            ->where('is_pinned', true)
+            ->count();
+
+        /*
+        |--------------------------------------------------------------------------
         | Dashboard View
         |--------------------------------------------------------------------------
         */
@@ -401,6 +531,24 @@ class DashboardController extends Controller
 
             'cashNegativeProjects' =>
                 $cashNegativeProjects,
+
+            'recentActivities' =>
+                $recentActivities,
+
+            'inactiveProjects' =>
+                $inactiveProjects,
+
+            'todayWorkMinutes' =>
+                $todayWorkMinutes,
+
+            'myTodayWorkMinutes' =>
+                $myTodayWorkMinutes,
+
+            'pinnedNoteCount' =>
+                $pinnedNoteCount,
+
+            'projectInactivityDays' =>
+                $projectInactivityDays,
         ]);
     }
 }

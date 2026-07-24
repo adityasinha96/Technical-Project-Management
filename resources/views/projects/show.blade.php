@@ -141,6 +141,10 @@
                     'approvals' => 'Approvals',
                     'payments' => 'Payments',
                     'expenses' => 'Expenses & Profit',
+                    'notes' => 'Notes',
+                    'work-logs' => 'Work Logs',
+                    'history' => 'Complete History',
+                    'attachments' => 'Attachments',
                     'team' => 'Team',
                     'files' => 'Files',
                     'technical' => 'Technical Details',
@@ -165,6 +169,58 @@
             x-cloak
         >
             <div class="space-y-6">
+                {{-- Pinned project information --}}
+                @if ($pinnedNotes->isNotEmpty())
+                    <section class="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm sm:p-6">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500 text-xl text-white">
+                                📌
+                            </span>
+
+                            <div>
+                                <h2 class="text-lg font-black text-amber-950">
+                                    Pinned Project Information
+                                </h2>
+
+                                <p class="text-sm text-amber-700">
+                                    Important information kept visible for the project team.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 grid gap-4 lg:grid-cols-2">
+                            @foreach ($pinnedNotes as $note)
+                                <article class="rounded-2xl border border-amber-200 bg-white p-5">
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset {{ $note->note_type->badgeClasses() }}">
+                                            {{ $note->note_type->label() }}
+                                        </span>
+
+                                        <span class="rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset {{ $note->visibility->badgeClasses() }}">
+                                            {{ $note->visibility->label() }}
+                                        </span>
+                                    </div>
+
+                                    @if ($note->title)
+                                        <h3 class="mt-3 font-black text-slate-950">
+                                            {{ $note->title }}
+                                        </h3>
+                                    @endif
+
+                                    <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">
+                                        {{ $note->content }}
+                                    </p>
+
+                                    <p class="mt-4 text-xs text-slate-500">
+                                        Added by
+                                        {{ $note->createdBy?->name ?? 'Unknown' }}
+                                    </p>
+                                </article>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
+
                 <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                     @can('payments.view')
                         {{-- Project price --}}
@@ -368,6 +424,18 @@
 
         {{-- Expenses and profitability tab partial --}}
         @include('projects.partials.expenses-tab')
+
+        {{-- Notes tab partial --}}
+        @include('projects.partials.notes-tab')
+
+        {{-- Work logs tab partial --}}
+        @include('projects.partials.work-logs-tab')
+
+        {{-- Complete history tab partial --}}
+        @include('projects.partials.history-tab')
+
+        {{-- Attachments tab partial --}}
+        @include('projects.partials.attachments-tab')
 
         {{-- Team tab --}}
         <div

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsProjectActivity;
+use App\Enums\ActivityVisibility;
 use App\Enums\ApprovalStage;
 use App\Enums\ApprovalStatus;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProjectApproval extends Model
 {
+    use LogsProjectActivity;
+
     protected $fillable = [
         'project_id',
         'stage',
@@ -38,6 +42,12 @@ class ProjectApproval extends Model
         ];
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
@@ -65,5 +75,32 @@ class ProjectApproval extends Model
             ProjectFile::class,
             'proof_file_id'
         );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Project activity logging configuration
+    |--------------------------------------------------------------------------
+    */
+
+    public function activityTrackedAttributes(): array
+    {
+        return [
+            'stage',
+            'submission_number',
+            'status',
+            'client_reviewer_name',
+            'reviewed_at',
+        ];
+    }
+
+    public function activityLabel(): string
+    {
+        return "Approval: {$this->stage->label()}";
+    }
+
+    public function activityVisibility(): ActivityVisibility
+    {
+        return ActivityVisibility::Management;
     }
 }

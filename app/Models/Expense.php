@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsProjectActivity;
+use App\Enums\ActivityVisibility;
 use App\Enums\ExpenseScope;
 use App\Enums\ExpenseStatus;
 use App\Enums\PaymentMode;
@@ -12,6 +14,8 @@ use Illuminate\Support\Facades\Storage;
 
 class Expense extends Model
 {
+    use LogsProjectActivity;
+
     protected $fillable = [
         'expense_number',
         'scope',
@@ -62,6 +66,12 @@ class Expense extends Model
         ];
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
@@ -91,8 +101,47 @@ class Expense extends Model
         );
     }
 
-    public function scopeEffective(Builder $query): Builder
+    /*
+    |--------------------------------------------------------------------------
+    | Project activity logging configuration
+    |--------------------------------------------------------------------------
+    */
+
+    public function activityTrackedAttributes(): array
     {
+        return [
+            'scope',
+            'project_id',
+            'expense_category_id',
+            'status',
+            'amount',
+            'expense_date',
+            'paid_at',
+            'vendor_name',
+            'voided_at',
+            'void_reason',
+        ];
+    }
+
+    public function activityLabel(): string
+    {
+        return "Expense: {$this->expense_number}";
+    }
+
+    public function activityVisibility(): ActivityVisibility
+    {
+        return ActivityVisibility::Financial;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Query scopes
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeEffective(
+        Builder $query
+    ): Builder {
         return $query
             ->where(
                 'status',
@@ -173,6 +222,12 @@ class Expense extends Model
         );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Expense helpers
+    |--------------------------------------------------------------------------
+    */
+
     public function getIsVoidedAttribute(): bool
     {
         return $this->voided_at !== null;
@@ -184,6 +239,12 @@ class Expense extends Model
             ? 'Voided'
             : $this->status->label();
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Receipt helpers
+    |--------------------------------------------------------------------------
+    */
 
     public function getReceiptUrlAttribute(): ?string
     {

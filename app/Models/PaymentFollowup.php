@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsProjectActivity;
+use App\Enums\ActivityVisibility;
 use App\Enums\PaymentFollowupChannel;
 use App\Enums\PaymentFollowupStatus;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PaymentFollowup extends Model
 {
+    use LogsProjectActivity;
     use SoftDeletes;
 
     protected $fillable = [
@@ -46,6 +49,12 @@ class PaymentFollowup extends Model
         ];
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
@@ -80,13 +89,56 @@ class PaymentFollowup extends Model
         );
     }
 
-    public function scopeOpen(Builder $query): Builder
+    /*
+    |--------------------------------------------------------------------------
+    | Project activity logging configuration
+    |--------------------------------------------------------------------------
+    */
+
+    public function activityTrackedAttributes(): array
     {
+        return [
+            'channel',
+            'status',
+            'followup_at',
+            'next_followup_at',
+            'promised_payment_date',
+            'promised_amount',
+            'assigned_to',
+            'completed_at',
+        ];
+    }
+
+    public function activityLabel(): string
+    {
+        return 'Payment follow-up';
+    }
+
+    public function activityVisibility(): ActivityVisibility
+    {
+        return ActivityVisibility::Financial;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Query scopes
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeOpen(
+        Builder $query
+    ): Builder {
         return $query->whereNotIn(
             'status',
             PaymentFollowupStatus::closedValues()
         );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Follow-up helpers
+    |--------------------------------------------------------------------------
+    */
 
     public function getIsOverdueAttribute(): bool
     {
@@ -97,7 +149,13 @@ class PaymentFollowup extends Model
         $dueAt = $this->next_followup_at
             ?: $this->followup_at;
 
-        return $dueAt->isBefore(now());
+        if (!$dueAt) {
+            return false;
+        }
+
+        return $dueAt->isBefore(
+            now()
+        );
     }
 
     public function getDueAtAttribute()

@@ -8,11 +8,14 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentFollowupController;
 use App\Http\Controllers\ProfitabilityController;
 use App\Http\Controllers\ProjectApprovalController;
+use App\Http\Controllers\ProjectAttachmentController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectFileController;
 use App\Http\Controllers\ProjectMemberController;
+use App\Http\Controllers\ProjectNoteController;
 use App\Http\Controllers\ProjectTaskController;
 use App\Http\Controllers\ProjectTemplateController;
+use App\Http\Controllers\ProjectWorkLogController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -315,6 +318,94 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
+    | Project Notes
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/projects/{project}/notes',
+        [ProjectNoteController::class, 'store']
+    )
+        ->middleware('can:notes.create')
+        ->name('projects.notes.store');
+
+    Route::put(
+        '/projects/{project}/notes/{projectNote}',
+        [ProjectNoteController::class, 'update']
+    )
+        ->middleware('can:notes.update')
+        ->name('projects.notes.update');
+
+    Route::put(
+        '/projects/{project}/notes/{projectNote}/pin',
+        [ProjectNoteController::class, 'togglePin']
+    )
+        ->middleware('can:notes.pin')
+        ->name('projects.notes.pin');
+
+    Route::delete(
+        '/projects/{project}/notes/{projectNote}',
+        [ProjectNoteController::class, 'destroy']
+    )
+        ->middleware('can:notes.delete')
+        ->name('projects.notes.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Project Work Logs
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/projects/{project}/work-logs',
+        [ProjectWorkLogController::class, 'store']
+    )
+        ->middleware('can:work-logs.create')
+        ->name('projects.work-logs.store');
+
+    Route::put(
+        '/projects/{project}/work-logs/{projectWorkLog}',
+        [ProjectWorkLogController::class, 'update']
+    )
+        ->middleware('can:work-logs.update')
+        ->name('projects.work-logs.update');
+
+    Route::delete(
+        '/projects/{project}/work-logs/{projectWorkLog}',
+        [ProjectWorkLogController::class, 'destroy']
+    )
+        ->middleware('can:work-logs.delete')
+        ->name('projects.work-logs.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Project Attachments
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/projects/{project}/attachments',
+        [ProjectAttachmentController::class, 'store']
+    )
+        ->middleware('can:attachments.upload')
+        ->name('projects.attachments.store');
+
+    Route::get(
+        '/projects/{project}/attachments/{projectFile}/download',
+        [ProjectAttachmentController::class, 'download']
+    )
+        ->middleware('can:attachments.view')
+        ->name('projects.attachments.download');
+
+    Route::delete(
+        '/projects/{project}/attachments/{projectFile}',
+        [ProjectAttachmentController::class, 'destroy']
+    )
+        ->middleware('can:attachments.delete')
+        ->name('projects.attachments.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
     | Payments and Outstanding Balance
     |--------------------------------------------------------------------------
     */
@@ -375,21 +466,21 @@ Route::middleware([
         '/projects/{project}/payment-followups',
         [PaymentFollowupController::class, 'store']
     )
-        ->middleware('can:payments.followup')
+        ->middleware('can:payment-followups.create')
         ->name('projects.payment-followups.store');
 
     Route::put(
         '/projects/{project}/payment-followups/{paymentFollowup}',
         [PaymentFollowupController::class, 'update']
     )
-        ->middleware('can:payments.followup')
+        ->middleware('can:payment-followups.update')
         ->name('projects.payment-followups.update');
 
     Route::delete(
         '/projects/{project}/payment-followups/{paymentFollowup}',
         [PaymentFollowupController::class, 'destroy']
     )
-        ->middleware('can:payments.followup')
+        ->middleware('can:payment-followups.delete')
         ->name('projects.payment-followups.destroy');
 
     /*

@@ -4,6 +4,17 @@
 @section('page-title', 'Business Dashboard')
 
 @section('content')
+@php
+    $formatDashboardMinutes = function (int $minutes): string {
+        $hours = intdiv($minutes, 60);
+        $remaining = $minutes % 60;
+
+        return $hours > 0
+            ? "{$hours}h {$remaining}m"
+            : "{$remaining}m";
+    };
+@endphp
+
     <div class="space-y-6">
 
         {{-- Welcome banner --}}
@@ -274,6 +285,165 @@
                             <path d="M6 3h12M6 8h12M9 3c4 0 6 2 6 5s-2 5-6 5H6l9 8"/>
                         </svg>
                     </div>
+                </div>
+            </article>
+        </section>
+
+        {{-- Phase 6 work logs, pinned notes and project activity statistics --}}
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <article class="rounded-3xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm">
+                <p class="text-sm font-medium text-indigo-700">
+                    Team Work Logged Today
+                </p>
+
+                <p class="mt-2 text-3xl font-black text-indigo-950">
+                    {{ $formatDashboardMinutes(
+                        $todayWorkMinutes
+                    ) }}
+                </p>
+            </article>
+
+            <article class="rounded-3xl border border-cyan-200 bg-cyan-50 p-5 shadow-sm">
+                <p class="text-sm font-medium text-cyan-700">
+                    My Work Logged Today
+                </p>
+
+                <p class="mt-2 text-3xl font-black text-cyan-950">
+                    {{ $formatDashboardMinutes(
+                        $myTodayWorkMinutes
+                    ) }}
+                </p>
+            </article>
+
+            <article class="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+                <p class="text-sm font-medium text-amber-700">
+                    Pinned Project Notes
+                </p>
+
+                <p class="mt-2 text-3xl font-black text-amber-950">
+                    {{ $pinnedNoteCount }}
+                </p>
+            </article>
+
+            <article class="rounded-3xl border border-red-200 bg-red-50 p-5 shadow-sm">
+                <p class="text-sm font-medium text-red-700">
+                    Inactive Projects
+                </p>
+
+                <p class="mt-2 text-3xl font-black text-red-950">
+                    {{ $inactiveProjects->count() }}
+                </p>
+
+                <p class="mt-1 text-xs font-bold text-red-700">
+                    No activity for
+                    {{ $projectInactivityDays }}+ days
+                </p>
+            </article>
+        </section>
+
+        {{-- Phase 6 recent activity and inactive project panels --}}
+        <section class="grid gap-6 xl:grid-cols-2">
+            <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-100 p-5">
+                    <h3 class="font-black text-slate-950">
+                        Recent Project Activity
+                    </h3>
+
+                    <p class="mt-1 text-sm text-slate-500">
+                        Latest changes across accessible projects.
+                    </p>
+                </div>
+
+                <div class="divide-y divide-slate-100">
+                    @forelse ($recentActivities as $activity)
+                        <a
+                            href="{{ route('projects.show', [
+                                'project' => $activity->project,
+                                'tab' => 'history',
+                            ]) }}"
+                            class="block p-5 transition hover:bg-slate-50"
+                        >
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <p class="font-bold text-slate-950">
+                                        {{ $activity->title }}
+                                    </p>
+
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        {{ $activity->project?->name ?? 'Project unavailable' }}
+                                        ·
+                                        {{ $activity->actor?->name ?? 'System' }}
+                                    </p>
+                                </div>
+
+                                <p class="shrink-0 text-xs text-slate-500">
+                                    {{ $activity->occurred_at?->diffForHumans() ?? 'Unknown time' }}
+                                </p>
+                            </div>
+                        </a>
+                    @empty
+                        <div class="p-10 text-center text-sm text-slate-500">
+                            No recent project activity.
+                        </div>
+                    @endforelse
+                </div>
+            </article>
+
+            <article class="overflow-hidden rounded-3xl border border-red-200 bg-white shadow-sm">
+                <div class="border-b border-red-100 bg-red-50 p-5">
+                    <h3 class="font-black text-red-950">
+                        Inactive Projects
+                    </h3>
+
+                    <p class="mt-1 text-sm text-red-700">
+                        Projects without recorded activity for
+                        {{ $projectInactivityDays }} or more days.
+                    </p>
+                </div>
+
+                <div class="divide-y divide-slate-100">
+                    @forelse ($inactiveProjects as $inactiveProject)
+                        <a
+                            href="{{ route(
+                                'projects.show',
+                                $inactiveProject
+                            ) }}"
+                            class="block p-5 transition hover:bg-red-50/40"
+                        >
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <p class="font-bold text-slate-950">
+                                        {{ $inactiveProject->name }}
+                                    </p>
+
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        {{ $inactiveProject->client?->display_name ?? 'No client assigned' }}
+                                    </p>
+
+                                    <p class="mt-2 text-xs text-slate-400">
+                                        Manager:
+
+                                        <span class="font-semibold text-slate-600">
+                                            {{ $inactiveProject->manager?->name ?? 'Not assigned' }}
+                                        </span>
+                                    </p>
+                                </div>
+
+                                <p class="shrink-0 text-xs font-bold text-red-700">
+                                    {{ (
+                                        $inactiveProject->last_activity_at
+                                        ?: $inactiveProject->created_at
+                                    )?->diffForHumans() ?? 'Unknown' }}
+                                </p>
+                            </div>
+                        </a>
+                    @empty
+                        <div class="p-10 text-center">
+                            <p class="font-bold text-emerald-700">
+                                All active projects have recent activity
+                            </p>
+                        </div>
+                    @endforelse
                 </div>
             </article>
         </section>
@@ -1263,3 +1433,4 @@
         </section>
     </div>
 @endsection
+
