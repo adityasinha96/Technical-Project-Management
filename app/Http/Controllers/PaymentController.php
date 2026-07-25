@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\NotificationSeverity;
 use App\Enums\PaymentKind;
 use App\Enums\PaymentMode;
 use App\Enums\PaymentStatus;
@@ -13,6 +14,8 @@ use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Project;
 use App\Models\ProjectFile;
+use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Notifications\NotificationRecipientResolver;
 use App\Services\Payments\PaymentService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -24,7 +27,9 @@ use Throwable;
 class PaymentController extends Controller
 {
     public function __construct(
-        private readonly PaymentService $paymentService
+        private readonly PaymentService $paymentService,
+        private readonly NotificationDispatcher $notificationDispatcher,
+        private readonly NotificationRecipientResolver $recipientResolver
     ) {
     }
 
@@ -282,6 +287,16 @@ class PaymentController extends Controller
             throw $exception;
         }
 
+        if (
+            $this->shouldSendPaymentReceivedNotification(
+                $payment
+            )
+        ) {
+            $this->sendPaymentReceivedNotification(
+                $payment
+            );
+        }
+
         return redirect()
             ->route('projects.show', [
                 'project' => $project,
@@ -312,12 +327,30 @@ class PaymentController extends Controller
         UpdatePaymentStatusRequest $request,
         Payment $payment
     ): RedirectResponse {
+        $oldStatusValue =
+            $payment->status->value;
+
         $status = PaymentStatus::from(
             $request->validated('status')
         );
 
         $this->paymentService
             ->changeStatus($payment, $status);
+
+        $payment->refresh();
+
+        if (
+            $oldStatusValue !==
+                $payment->status->value
+            && $this
+                ->shouldSendPaymentReceivedNotification(
+                    $payment
+                )
+        ) {
+            $this->sendPaymentReceivedNotification(
+                $payment
+            );
+        }
 
         return back()->with(
             'success',
@@ -338,6 +371,85 @@ class PaymentController extends Controller
         return back()->with(
             'success',
             'Payment entry voided successfully.'
+        );
+    }
+
+    private function shouldSendPaymentReceivedNotification(
+        Payment $payment
+    ): bool {
+        $statusValue =
+            $payment->status->value;
+
+        return
+            $payment->kind ===
+                PaymentKind::Receipt
+            && in_array(
+                $statusValue,
+                [
+                    'received',
+                    'completed',
+                ],
+                true
+            )
+            && $payment->voided_at === null;
+    }
+
+    private function sendPaymentReceivedNotification(
+        Payment $payment
+    ): void {
+        $payment->loadMissing(
+            'project.manager'
+        );
+
+        $recipients = $this
+            ->recipientResolver
+            ->projectManager(
+                $payment->project
+            )
+            ->merge(
+                $this
+                    ->recipientResolver
+                    ->accounts()
+            )
+            ->unique('id')
+            ->values();
+
+        $this->notificationDispatcher->send(
+            recipients: $recipients,
+            eventKey: 'payment.received',
+            title: 'Project payment received',
+
+            message:
+                '₹'
+                . number_format(
+                    (float) $payment->amount,
+                    2
+                )
+                . " was recorded for {$payment->project->name}.",
+
+            url: route(
+                'payments.show',
+                $payment
+            ),
+
+            severity:
+                NotificationSeverity::Success,
+
+            subject: $payment,
+
+            context: [
+                'project_id' =>
+                    $payment->project_id,
+
+                'payment_id' =>
+                    $payment->id,
+
+                'amount' =>
+                    $payment->amount,
+            ],
+
+            dedupeBucket:
+                "payment-received:{$payment->id}:{$payment->status->value}"
         );
     }
 
@@ -382,3 +494,4 @@ class PaymentController extends Controller
         ]);
     }
 }
+

@@ -4,17 +4,22 @@ namespace App\Services\Projects;
 
 use App\Enums\ApprovalStage;
 use App\Enums\ApprovalStatus;
+use App\Enums\NotificationSeverity;
 use App\Enums\ProjectStatus;
 use App\Models\Project;
 use App\Models\ProjectApproval;
 use App\Models\User;
+use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Notifications\NotificationRecipientResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ProjectApprovalService
 {
     public function __construct(
-        private readonly ProjectProgressService $progressService
+        private readonly ProjectProgressService $progressService,
+        private readonly NotificationDispatcher $notificationDispatcher,
+        private readonly NotificationRecipientResolver $recipientResolver
     ) {
     }
 
@@ -76,7 +81,7 @@ class ProjectApprovalService
     ): ProjectApproval {
         $this->assertCanSubmit($project, $stage);
 
-        return DB::transaction(
+        $approval = DB::transaction(
             function () use (
                 $project,
                 $stage,
@@ -130,6 +135,46 @@ class ProjectApprovalService
                 return $approval;
             }
         );
+
+        $approval->loadMissing('project');
+
+        $this->notificationDispatcher->send(
+            recipients:
+                $this
+                    ->recipientResolver
+                    ->projectManager(
+                        $approval->project
+                    ),
+
+            eventKey:
+                'approval.submitted',
+
+            title:
+                "{$approval->stage->label()} submitted for approval",
+
+            message:
+                "{$approval->project->name} has a new {$approval->stage->label()} approval submission.",
+
+            url: route(
+                'projects.show',
+                [
+                    'project' =>
+                        $approval->project_id,
+
+                    'tab' => 'approvals',
+                ]
+            ),
+
+            severity:
+                NotificationSeverity::Info,
+
+            subject: $approval,
+
+            dedupeBucket:
+                "approval-submitted:{$approval->id}"
+        );
+
+        return $approval;
     }
 
     public function review(
@@ -252,5 +297,51 @@ class ProjectApprovalService
                     ->synchronizeOfficialProgress($project);
             }
         );
+
+        $eventKey =
+            $approval->status ===
+            ApprovalStatus::Approved
+                ? 'approval.approved'
+                : 'approval.changes_requested';
+
+        $severity =
+            $approval->status ===
+            ApprovalStatus::Approved
+                ? NotificationSeverity::Success
+                : NotificationSeverity::Warning;
+
+        $this->notificationDispatcher->send(
+            recipients:
+                $this
+                    ->recipientResolver
+                    ->projectTeam(
+                        $approval->project
+                    ),
+
+            eventKey: $eventKey,
+
+            title:
+                "{$approval->stage->label()} {$approval->status->label()}",
+
+            message:
+                "{$approval->project->name}: {$approval->stage->label()} has been {$approval->status->label()}.",
+
+            url: route(
+                'projects.show',
+                [
+                    'project' =>
+                        $approval->project_id,
+
+                    'tab' => 'approvals',
+                ]
+            ),
+
+            severity: $severity,
+            subject: $approval,
+
+            dedupeBucket:
+                "approval-reviewed:{$approval->id}:{$approval->status->value}"
+        );
     }
 }
+

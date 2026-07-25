@@ -4,6 +4,9 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\NotificationCenterController;
+use App\Http\Controllers\NotificationPreferenceController;
+use App\Http\Controllers\NotificationRuleController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentFollowupController;
 use App\Http\Controllers\ProfitabilityController;
@@ -58,6 +61,106 @@ Route::middleware([
     )
         ->middleware('can:dashboard.view')
         ->name('dashboard');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notification Centre
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/notifications',
+        [NotificationCenterController::class, 'index']
+    )
+        ->middleware('can:notifications.view')
+        ->name('notifications.index');
+
+    /*
+     * These static notification routes must remain above the dynamic
+     * /notifications/{notification} routes.
+     */
+    Route::put(
+        '/notifications/read-all',
+        [NotificationCenterController::class, 'markAllRead']
+    )
+        ->middleware('can:notifications.view')
+        ->name('notifications.read-all');
+
+    Route::delete(
+        '/notifications/read',
+        [NotificationCenterController::class, 'clearRead']
+    )
+        ->middleware('can:notifications.view')
+        ->name('notifications.clear-read');
+
+    Route::get(
+        '/notifications/{notification}/open',
+        [NotificationCenterController::class, 'open']
+    )
+        ->middleware('can:notifications.view')
+        ->name('notifications.open');
+
+    Route::put(
+        '/notifications/{notification}/read',
+        [NotificationCenterController::class, 'markRead']
+    )
+        ->middleware('can:notifications.view')
+        ->name('notifications.read');
+
+    Route::delete(
+        '/notifications/{notification}',
+        [NotificationCenterController::class, 'destroy']
+    )
+        ->middleware('can:notifications.view')
+        ->name('notifications.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | User Notification Preferences
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/notification-settings',
+        [NotificationPreferenceController::class, 'edit']
+    )
+        ->middleware(
+            'can:notifications.manage-preferences'
+        )
+        ->name('notification-settings.edit');
+
+    Route::put(
+        '/notification-settings',
+        [NotificationPreferenceController::class, 'update']
+    )
+        ->middleware(
+            'can:notifications.manage-preferences'
+        )
+        ->name('notification-settings.update');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Administrator Reminder Rules
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/notification-rules',
+        [NotificationRuleController::class, 'index']
+    )
+        ->middleware(
+            'can:notifications.manage-rules'
+        )
+        ->name('notification-rules.index');
+
+    Route::put(
+        '/notification-rules/{notificationRule}',
+        [NotificationRuleController::class, 'update']
+    )
+        ->middleware(
+            'can:notifications.manage-rules'
+        )
+        ->name('notification-rules.update');
 
     /*
     |--------------------------------------------------------------------------
@@ -744,4 +847,3 @@ Route::middleware([
         ->middleware('can:reports.profitability')
         ->name('profitability.index');
 });
-

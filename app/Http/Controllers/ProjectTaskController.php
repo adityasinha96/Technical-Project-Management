@@ -2,18 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\NotificationSeverity;
 use App\Enums\TaskStatus;
 use App\Http\Requests\StoreProjectTaskRequest;
 use App\Http\Requests\UpdateProjectTaskRequest;
 use App\Models\Project;
 use App\Models\ProjectTask;
+use App\Services\Notifications\NotificationDispatcher;
 use App\Services\Projects\ProjectProgressService;
 use Illuminate\Http\RedirectResponse;
 
 class ProjectTaskController extends Controller
 {
     public function __construct(
-        private readonly ProjectProgressService $progressService
+        private readonly ProjectProgressService $progressService,
+        private readonly NotificationDispatcher $notificationDispatcher
     ) {
     }
 
@@ -25,7 +28,7 @@ class ProjectTaskController extends Controller
             $request->validated()
         );
 
-        $project->tasks()->create([
+        $task = $project->tasks()->create([
             ...$data,
             'created_by' => $request->user()->id,
             'sort_order' => (
@@ -34,6 +37,47 @@ class ProjectTaskController extends Controller
                     ->max('sort_order')
             ) + 1,
         ]);
+
+        $task->loadMissing(
+            'assignee',
+            'project'
+        );
+
+        if ($task->assignee) {
+            $this->notificationDispatcher->send(
+                recipients: $task->assignee,
+                eventKey: 'task.assigned',
+                title: 'New project task assigned',
+
+                message:
+                    "{$task->title} has been assigned to you for {$task->project->name}.",
+
+                url: route(
+                    'projects.show',
+                    [
+                        'project' =>
+                            $task->project_id,
+
+                        'tab' => 'tasks',
+                    ]
+                ),
+
+                severity:
+                    NotificationSeverity::Info,
+
+                subject: $task,
+
+                context: [
+                    'project_id' =>
+                        $task->project_id,
+
+                    'task_id' => $task->id,
+                ],
+
+                dedupeBucket:
+                    "task-assigned:{$task->id}:{$task->assigned_to}"
+            );
+        }
 
         $this->progressService
             ->recalculateInternalProgress($project);
@@ -54,12 +98,59 @@ class ProjectTaskController extends Controller
             404
         );
 
+        $oldAssignedTo = $projectTask->assigned_to;
+
         $data = $this->normaliseTaskData(
             $request->validated(),
             $projectTask
         );
 
         $projectTask->update($data);
+
+        if (
+            $projectTask->assigned_to
+            && $oldAssignedTo !==
+                $projectTask->assigned_to
+        ) {
+            $projectTask->loadMissing(
+                'assignee',
+                'project'
+            );
+
+            $this->notificationDispatcher->send(
+                recipients:
+                    $projectTask->assignee,
+
+                eventKey:
+                    'task.assigned',
+
+                title:
+                    'Project task reassigned',
+
+                message:
+                    "{$projectTask->title} has been assigned to you.",
+
+                url: route(
+                    'projects.show',
+                    [
+                        'project' =>
+                            $projectTask
+                                ->project_id,
+
+                        'tab' => 'tasks',
+                    ]
+                ),
+
+                severity:
+                    NotificationSeverity::Info,
+
+                subject:
+                    $projectTask,
+
+                dedupeBucket:
+                    "task-reassigned:{$projectTask->id}:{$projectTask->assigned_to}:{$projectTask->updated_at->timestamp}"
+            );
+        }
 
         $this->progressService
             ->recalculateInternalProgress($project);
@@ -136,3 +227,4 @@ class ProjectTaskController extends Controller
         return $data;
     }
 }
+

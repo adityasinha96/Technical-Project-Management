@@ -18,8 +18,27 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    app(PermissionRegistrar::class)
+        ->forgetCachedPermissions();
+
+    Role::findOrCreate(
+        'super-admin',
+        'web'
+    );
+
+    Role::findOrCreate(
+        'project-manager',
+        'web'
+    );
+
+    app(PermissionRegistrar::class)
+        ->forgetCachedPermissions();
+});
 
 function createTicketTestUser(
     array $permissions = []
@@ -30,12 +49,14 @@ function createTicketTestUser(
     ]);
 
     $role = Role::findOrCreate(
-        'ticket-test-role'
+        'ticket-test-role',
+        'web'
     );
 
     foreach ($permissions as $permission) {
         Permission::findOrCreate(
-            $permission
+            $permission,
+            'web'
         );
     }
 
@@ -337,3 +358,4 @@ it('escalates tickets based on sla deadlines', function () {
         )
         ->toBeGreaterThanOrEqual(2);
 });
+

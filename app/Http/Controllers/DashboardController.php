@@ -603,6 +603,52 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Phase 8 Notification Statistics
+        |--------------------------------------------------------------------------
+        */
+
+        $notificationStats = [
+            'unread' =>
+                request()
+                    ->user()
+                    ->unreadNotifications()
+                    ->count(),
+
+            'critical_unread' =>
+                request()
+                    ->user()
+                    ->unreadNotifications()
+                    ->where(
+                        'data->severity',
+                        'critical'
+                    )
+                    ->count(),
+
+            'queued_email' =>
+                \App\Models\NotificationDispatch::query()
+                    ->where(
+                        'channel',
+                        'mail'
+                    )
+                    ->where(
+                        'status',
+                        \App\Enums\NotificationDeliveryStatus::Queued
+                            ->value
+                    )
+                    ->count(),
+
+            'failed_delivery' =>
+                \App\Models\NotificationDispatch::query()
+                    ->where(
+                        'status',
+                        \App\Enums\NotificationDeliveryStatus::Failed
+                            ->value
+                    )
+                    ->count(),
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
         | Dashboard View
         |--------------------------------------------------------------------------
         */
@@ -663,6 +709,9 @@ class DashboardController extends Controller
 
             'recentTickets' =>
                 $recentTickets,
+
+            'notificationStats' =>
+                $notificationStats,
         ]);
     }
 }

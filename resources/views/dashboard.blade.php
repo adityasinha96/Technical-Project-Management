@@ -290,6 +290,54 @@
         </section>
 
 
+        {{-- Phase 8 notification statistics --}}
+        @can('notifications.view')
+            <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <article class="rounded-3xl border border-indigo-200 bg-indigo-50 p-5">
+                    <p class="text-sm font-medium text-indigo-700">
+                        Unread Notifications
+                    </p>
+
+                    <p class="mt-2 text-3xl font-black text-indigo-950">
+                        {{ $notificationStats['unread'] }}
+                    </p>
+                </article>
+
+                <article class="rounded-3xl border border-red-200 bg-red-50 p-5">
+                    <p class="text-sm font-medium text-red-700">
+                        Critical Unread Alerts
+                    </p>
+
+                    <p class="mt-2 text-3xl font-black text-red-950">
+                        {{ $notificationStats['critical_unread'] }}
+                    </p>
+                </article>
+
+                @can('notifications.view-delivery-history')
+                    <article class="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+                        <p class="text-sm font-medium text-amber-700">
+                            Queued Emails
+                        </p>
+
+                        <p class="mt-2 text-3xl font-black text-amber-950">
+                            {{ $notificationStats['queued_email'] }}
+                        </p>
+                    </article>
+
+                    <article class="rounded-3xl border border-orange-200 bg-orange-50 p-5">
+                        <p class="text-sm font-medium text-orange-700">
+                            Failed Deliveries
+                        </p>
+
+                        <p class="mt-2 text-3xl font-black text-orange-950">
+                            {{ $notificationStats['failed_delivery'] }}
+                        </p>
+                    </article>
+                @endcan
+            </section>
+        @endcan
+
+
         {{-- Phase 7 ticket statistics --}}
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             @foreach ([
@@ -1520,3 +1568,4 @@
         </section>
     </div>
 @endsection
+

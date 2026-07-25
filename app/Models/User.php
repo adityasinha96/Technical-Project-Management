@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -75,12 +76,12 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     public function assignedTasks(): HasMany
-{
-    return $this->hasMany(
-        ProjectTask::class,
-        'assigned_to'
-    );
-}
+    {
+        return $this->hasMany(
+            ProjectTask::class,
+            'assigned_to'
+        );
+    }
 
     public function submittedApprovals(): HasMany
     {
@@ -168,5 +169,43 @@ class User extends Authenticatable implements MustVerifyEmail
             TicketEscalation::class,
             'acknowledged_by'
         );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Phase 8 Notification Relationships
+    |--------------------------------------------------------------------------
+    */
+
+    public function notificationSetting(): HasOne
+    {
+        return $this->hasOne(
+            UserNotificationSetting::class
+        );
+    }
+
+    public function notificationPreferences(): HasMany
+    {
+        return $this->hasMany(
+            UserNotificationPreference::class
+        );
+    }
+
+    public function notificationDispatches(): HasMany
+    {
+        return $this->hasMany(
+            NotificationDispatch::class
+        );
+    }
+
+    public function getOrCreateNotificationSetting():
+        UserNotificationSetting
+    {
+        return $this
+            ->notificationSetting()
+            ->firstOrCreate([], [
+                'timezone' => 'Asia/Kolkata',
+                'daily_digest_time' => '08:30:00',
+            ]);
     }
 }

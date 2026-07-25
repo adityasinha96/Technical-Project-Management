@@ -211,6 +211,17 @@ class RolesAndPermissionsSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
+            | Notifications
+            |--------------------------------------------------------------------------
+            */
+
+            'notifications.view',
+            'notifications.manage-preferences',
+            'notifications.manage-rules',
+            'notifications.view-delivery-history',
+
+            /*
+            |--------------------------------------------------------------------------
             | Reports
             |--------------------------------------------------------------------------
             */
@@ -360,6 +371,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'tickets.acknowledge-escalation',
             'tickets.close',
 
+            'notifications.view',
+            'notifications.manage-preferences',
+            'notifications.view-delivery-history',
+
             'reports.view',
             'reports.profitability',
         ]);
@@ -413,6 +428,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'tickets.create',
             'tickets.comment',
             'tickets.respond',
+
+            'notifications.view',
+            'notifications.manage-preferences',
 
             'reports.view',
             'reports.export',
@@ -470,6 +488,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'tickets.comment',
             'tickets.respond',
             'tickets.resolve',
+
+            'notifications.view',
+            'notifications.manage-preferences',
         ]);
 
         /*

@@ -307,6 +307,83 @@
                 </a>
             @endcan
 
+            {{-- Notifications --}}
+            @can('notifications.view')
+                <a
+                    href="{{ route(
+                        'notifications.index'
+                    ) }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{
+                            request()->routeIs(
+                                'notifications.*'
+                            )
+                                ? 'bg-white/10 text-white'
+                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                        }}"
+                >
+                    <span class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5">
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                            <path d="M10 21h4"/>
+                        </svg>
+
+                        @if (
+                            ($headerUnreadNotificationCount ?? 0)
+                            > 0
+                        )
+                            <span class="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-red-500"></span>
+                        @endif
+                    </span>
+
+                    <span x-show="!sidebarCollapsed">
+                        Notifications
+                    </span>
+                </a>
+            @endcan
+
+            {{-- Notification Preferences --}}
+            @can('notifications.manage-preferences')
+                <a
+                    href="{{ route(
+                        'notification-settings.edit'
+                    ) }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-white"
+                >
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5">
+                        ⚙
+                    </span>
+
+                    <span x-show="!sidebarCollapsed">
+                        Notification Preferences
+                    </span>
+                </a>
+            @endcan
+
+            {{-- Reminder Rules --}}
+            @can('notifications.manage-rules')
+                <a
+                    href="{{ route(
+                        'notification-rules.index'
+                    ) }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-white"
+                >
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-300">
+                        ⏱
+                    </span>
+
+                    <span x-show="!sidebarCollapsed">
+                        Reminder Rules
+                    </span>
+                </a>
+            @endcan
+
             {{-- Payments --}}
             @can('payments.view')
                 <a
@@ -538,24 +615,146 @@
                         System Operational
                     </div>
 
-                    <button
-                        type="button"
-                        class="relative rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm transition hover:bg-slate-50"
-                        aria-label="Notifications"
-                    >
-                        <svg
-                            class="h-5 w-5"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
+                    @can('notifications.view')
+                        <div
+                            x-data="{ open: false }"
+                            class="relative"
                         >
-                            <path d="M18 8a6 6 0 00-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
-                            <path d="M10 21h4"/>
-                        </svg>
+                            <button
+                                type="button"
+                                @click="open = !open"
+                                class="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-indigo-300 hover:text-indigo-600"
+                                aria-label="Open notifications"
+                            >
+                                <svg
+                                    class="h-5 w-5"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                >
+                                    <path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                                    <path d="M10 21h4"/>
+                                </svg>
 
-                        <span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500"></span>
-                    </button>
+                                @if ($headerUnreadNotificationCount > 0)
+                                    <span class="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+                                        {{ $headerUnreadNotificationCount > 99
+                                            ? '99+'
+                                            : $headerUnreadNotificationCount }}
+                                    </span>
+                                @endif
+                            </button>
+
+                            <div
+                                x-show="open"
+                                x-cloak
+                                x-transition
+                                @click.outside="open = false"
+                                class="absolute right-0 z-50 mt-3 w-[min(92vw,390px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+                            >
+                                <div class="flex items-center justify-between border-b border-slate-100 p-4">
+                                    <div>
+                                        <p class="font-black text-slate-950">
+                                            Notifications
+                                        </p>
+
+                                        <p class="text-xs text-slate-500">
+                                            {{ $headerUnreadNotificationCount }}
+                                            unread
+                                        </p>
+                                    </div>
+
+                                    <a
+                                        href="{{ route(
+                                            'notifications.index'
+                                        ) }}"
+                                        class="text-xs font-bold text-indigo-600"
+                                    >
+                                        View All
+                                    </a>
+                                </div>
+
+                                <div class="max-h-[420px] overflow-y-auto">
+                                    @forelse ($headerNotifications as $notification)
+                                        @php
+                                            $data = $notification->data;
+                                            $severity = $data['severity'] ?? 'info';
+                                        @endphp
+
+                                        <a
+                                            href="{{ route(
+                                                'notifications.open',
+                                                $notification
+                                            ) }}"
+                                            class="block border-b border-slate-100 p-4 transition hover:bg-slate-50
+                                                {{ $notification->read_at
+                                                    ? ''
+                                                    : 'bg-indigo-50/40' }}"
+                                        >
+                                            <div class="flex gap-3">
+                                                <span
+                                                    class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full {{
+                                                        match ($severity) {
+                                                            'success' => 'bg-emerald-500',
+                                                            'warning' => 'bg-amber-500',
+                                                            'danger' => 'bg-orange-500',
+                                                            'critical' => 'bg-red-600',
+                                                            default => 'bg-blue-500',
+                                                        }
+                                                    }}"
+                                                ></span>
+
+                                                <div class="min-w-0">
+                                                    <p class="text-sm font-black text-slate-950">
+                                                        {{ $data['title']
+                                                            ?? 'Notification' }}
+                                                    </p>
+
+                                                    <p class="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">
+                                                        {{ $data['message']
+                                                            ?? '' }}
+                                                    </p>
+
+                                                    <p class="mt-2 text-[11px] text-slate-400">
+                                                        {{ $notification
+                                                            ->created_at
+                                                            ->diffForHumans() }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    @empty
+                                        <div class="p-10 text-center text-sm text-slate-500">
+                                            No notifications available.
+                                        </div>
+                                    @endforelse
+                                </div>
+
+                                <div class="flex border-t border-slate-100">
+                                    <a
+                                        href="{{ route(
+                                            'notifications.index'
+                                        ) }}"
+                                        class="flex-1 px-4 py-3 text-center text-xs font-bold text-indigo-600"
+                                    >
+                                        Notification Centre
+                                    </a>
+
+                                    @can('notifications.manage-preferences')
+                                        <a
+                                            href="{{ route(
+                                                'notification-settings.edit'
+                                            ) }}"
+                                            class="flex-1 border-l border-slate-100 px-4 py-3 text-center text-xs font-bold text-slate-600"
+                                        >
+                                            Preferences
+                                        </a>
+                                    @endcan
+                                </div>
+                            </div>
+                        </div>
+                    @endcan
                 </div>
             </div>
         </header>
@@ -589,3 +788,4 @@
     @stack('scripts')
 </body>
 </html>
+

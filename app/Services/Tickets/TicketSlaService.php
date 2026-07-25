@@ -3,18 +3,23 @@
 namespace App\Services\Tickets;
 
 use App\Enums\ActivityVisibility;
+use App\Enums\NotificationSeverity;
 use App\Enums\TicketEscalationLevel;
 use App\Enums\TicketPriority;
 use App\Models\ProjectTicket;
 use App\Models\TicketSlaPolicy;
 use App\Models\User;
 use App\Services\Projects\ProjectActivityService;
+use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Notifications\NotificationRecipientResolver;
 use Illuminate\Support\Facades\DB;
 
 class TicketSlaService
 {
     public function __construct(
-        private readonly ProjectActivityService $activityService
+        private readonly ProjectActivityService $activityService,
+        private readonly NotificationDispatcher $notificationDispatcher,
+        private readonly NotificationRecipientResolver $notificationRecipientResolver
     ) {
     }
 
@@ -331,6 +336,75 @@ class TicketSlaService
 
                                 actorId: null
                             );
+
+                        $eventKey = match ($levelEnum) {
+                            TicketEscalationLevel::Warning =>
+                                'ticket.sla_warning',
+
+                            TicketEscalationLevel::Overdue =>
+                                'ticket.sla_overdue',
+
+                            TicketEscalationLevel::Critical =>
+                                'ticket.sla_critical',
+                        };
+
+                        $severity = match ($levelEnum) {
+                            TicketEscalationLevel::Warning =>
+                                NotificationSeverity::Warning,
+
+                            TicketEscalationLevel::Overdue =>
+                                NotificationSeverity::Danger,
+
+                            TicketEscalationLevel::Critical =>
+                                NotificationSeverity::Critical,
+                        };
+
+                        $recipients =
+                            $this
+                                ->notificationRecipientResolver
+                                ->ticketRecipients(
+                                    $ticket
+                                )
+                                ->merge(
+                                    $this
+                                        ->notificationRecipientResolver
+                                        ->management()
+                                )
+                                ->unique('id')
+                                ->values();
+
+                        $this->notificationDispatcher->send(
+                            recipients: $recipients,
+                            eventKey: $eventKey,
+
+                            title:
+                                "{$ticket->ticket_number}: {$levelEnum->label()}",
+
+                            message:
+                                "{$ticket->subject} requires action. Current escalation level: {$level}.",
+
+                            url: route(
+                                'tickets.show',
+                                $ticket
+                            ),
+
+                            severity: $severity,
+                            subject: $ticket,
+
+                            context: [
+                                'ticket_id' =>
+                                    $ticket->id,
+
+                                'escalation_level' =>
+                                    $level,
+
+                                'minutes_overdue' =>
+                                    $minutesOverdue,
+                            ],
+
+                            dedupeBucket:
+                                "ticket-escalation:{$ticket->id}:{$ticket->reopen_count}:{$level}"
+                        );
                     }
                 }
 
@@ -387,3 +461,4 @@ class TicketSlaService
         return 3;
     }
 }
+

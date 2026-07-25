@@ -24,3 +24,52 @@ Schedule::command(
 )
     ->everyFifteenMinutes()
     ->withoutOverlapping();
+
+/*
+|--------------------------------------------------------------------------
+| Phase 8 Notification Reminder Scanning
+|--------------------------------------------------------------------------
+|
+| Scan active reminder rules every thirty minutes and dispatch any
+| notifications that have become due.
+|
+*/
+
+Schedule::command(
+    'notifications:scan-reminders'
+)
+    ->everyThirtyMinutes()
+    ->withoutOverlapping();
+
+/*
+|--------------------------------------------------------------------------
+| Phase 8 Daily Notification Summaries
+|--------------------------------------------------------------------------
+|
+| Check every fifteen minutes for users whose configured daily summary
+| time has arrived.
+|
+*/
+
+Schedule::command(
+    'notifications:send-daily-summaries'
+)
+    ->everyFifteenMinutes()
+    ->withoutOverlapping();
+
+/*
+|--------------------------------------------------------------------------
+| Failed Queue Job Cleanup
+|--------------------------------------------------------------------------
+|
+| Remove failed queue jobs older than seven days. The command runs once
+| daily at 02:30 according to the application's configured timezone.
+|
+*/
+
+Schedule::command(
+    'queue:prune-failed --hours=168'
+)
+    ->dailyAt('02:30')
+    ->withoutOverlapping();
+

@@ -3,12 +3,15 @@
 namespace App\Services\Tickets;
 
 use App\Enums\ActivityVisibility;
+use App\Enums\NotificationSeverity;
 use App\Enums\TicketStatus;
 use App\Models\Project;
 use App\Models\ProjectTicket;
 use App\Models\TicketComment;
 use App\Models\User;
 use App\Services\Projects\ProjectActivityService;
+use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Notifications\NotificationRecipientResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -17,7 +20,9 @@ class TicketService
 {
     public function __construct(
         private readonly TicketSlaService $slaService,
-        private readonly ProjectActivityService $activityService
+        private readonly ProjectActivityService $activityService,
+        private readonly NotificationDispatcher $notificationDispatcher,
+        private readonly NotificationRecipientResolver $notificationRecipientResolver
     ) {
     }
 
@@ -26,7 +31,7 @@ class TicketService
         User $creator,
         array $data
     ): ProjectTicket {
-        return DB::transaction(
+        $ticket = DB::transaction(
             function () use (
                 $project,
                 $creator,
@@ -151,6 +156,40 @@ class TicketService
                 return $ticket->refresh();
             }
         );
+
+        $ticket->loadMissing('project');
+
+        $this->notificationDispatcher->send(
+            recipients:
+                $this
+                    ->notificationRecipientResolver
+                    ->ticketRecipients(
+                        $ticket
+                    ),
+
+            eventKey: 'ticket.created',
+
+            title:
+                "{$ticket->ticket_number} created",
+
+            message:
+                "{$ticket->subject} was created for {$ticket->project->name}.",
+
+            url: route(
+                'tickets.show',
+                $ticket
+            ),
+
+            severity:
+                NotificationSeverity::Info,
+
+            subject: $ticket,
+
+            dedupeBucket:
+                "ticket-created:{$ticket->id}"
+        );
+
+        return $ticket;
     }
 
     public function updateDetails(
@@ -289,7 +328,7 @@ class TicketService
         User $assignedBy,
         ?User $assignee
     ): ProjectTicket {
-        return DB::transaction(
+        $ticket = DB::transaction(
             function () use (
                 $ticket,
                 $assignedBy,
@@ -390,6 +429,34 @@ class TicketService
                 return $ticket->refresh();
             }
         );
+
+        if ($assignee) {
+            $this->notificationDispatcher->send(
+                recipients: $assignee,
+                eventKey: 'ticket.assigned',
+
+                title:
+                    "{$ticket->ticket_number} assigned to you",
+
+                message:
+                    "{$ticket->subject} requires your attention.",
+
+                url: route(
+                    'tickets.show',
+                    $ticket
+                ),
+
+                severity:
+                    NotificationSeverity::Info,
+
+                subject: $ticket,
+
+                dedupeBucket:
+                    "ticket-assigned:{$ticket->id}:{$assignee->id}:{$ticket->assigned_at?->timestamp}"
+            );
+        }
+
+        return $ticket;
     }
 
     public function transition(
@@ -548,7 +615,7 @@ class TicketService
         User $user,
         array $data
     ): ProjectTicket {
-        return DB::transaction(
+        $ticket = DB::transaction(
             function () use (
                 $ticket,
                 $user,
@@ -683,6 +750,44 @@ class TicketService
                 return $ticket->refresh();
             }
         );
+
+        $this->notificationDispatcher->send(
+            recipients:
+                $this
+                    ->notificationRecipientResolver
+                    ->ticketRecipients(
+                        $ticket
+                    )
+                    ->reject(
+                        fn ($recipient) =>
+                            $recipient->id ===
+                            $user->id
+                    )
+                    ->values(),
+
+            eventKey: 'ticket.resolved',
+
+            title:
+                "{$ticket->ticket_number} resolved",
+
+            message:
+                $ticket->resolution_summary,
+
+            url: route(
+                'tickets.show',
+                $ticket
+            ),
+
+            severity:
+                NotificationSeverity::Success,
+
+            subject: $ticket,
+
+            dedupeBucket:
+                "ticket-resolved:{$ticket->id}:{$ticket->resolved_at?->timestamp}"
+        );
+
+        return $ticket;
     }
 
     public function reopen(
@@ -690,7 +795,7 @@ class TicketService
         User $user,
         string $reason
     ): ProjectTicket {
-        return DB::transaction(
+        $ticket = DB::transaction(
             function () use (
                 $ticket,
                 $user,
@@ -801,6 +906,38 @@ class TicketService
                 return $ticket->refresh();
             }
         );
+
+        $this->notificationDispatcher->send(
+            recipients:
+                $this
+                    ->notificationRecipientResolver
+                    ->ticketRecipients(
+                        $ticket
+                    ),
+
+            eventKey: 'ticket.reopened',
+
+            title:
+                "{$ticket->ticket_number} reopened",
+
+            message:
+                $ticket->reopen_reason,
+
+            url: route(
+                'tickets.show',
+                $ticket
+            ),
+
+            severity:
+                NotificationSeverity::Warning,
+
+            subject: $ticket,
+
+            dedupeBucket:
+                "ticket-reopened:{$ticket->id}:{$ticket->reopen_count}"
+        );
+
+        return $ticket;
     }
 
     public function addComment(
@@ -808,7 +945,7 @@ class TicketService
         User $user,
         array $data
     ): TicketComment {
-        return DB::transaction(
+        $comment = DB::transaction(
             function () use (
                 $ticket,
                 $user,
@@ -896,6 +1033,53 @@ class TicketService
                 return $comment;
             }
         );
+
+        $ticket = ProjectTicket::query()
+            ->with('project')
+            ->findOrFail($ticket->id);
+
+        $recipients =
+            $this
+                ->notificationRecipientResolver
+                ->ticketRecipients(
+                    $ticket
+                )
+                ->reject(
+                    fn ($recipient) =>
+                        $recipient->id ===
+                        $user->id
+                )
+                ->values();
+
+        $this->notificationDispatcher->send(
+            recipients: $recipients,
+
+            eventKey:
+                'ticket.comment_added',
+
+            title:
+                "New discussion on {$ticket->ticket_number}",
+
+            message:
+                str($comment->message)
+                    ->limit(180)
+                    ->toString(),
+
+            url: route(
+                'tickets.show',
+                $ticket
+            ),
+
+            severity:
+                NotificationSeverity::Info,
+
+            subject: $comment,
+
+            dedupeBucket:
+                "ticket-comment:{$comment->id}"
+        );
+
+        return $comment;
     }
 
     private function recordStatusHistory(
@@ -935,3 +1119,4 @@ class TicketService
                 : ActivityVisibility::Team;
     }
 }
+
