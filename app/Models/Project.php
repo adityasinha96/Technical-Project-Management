@@ -58,6 +58,7 @@ class Project extends Model
 
         'start_date',
         'expected_delivery_date',
+        'collection_due_date',
         'revised_delivery_date',
         'actual_completion_date',
         'maximum_duration_days',
@@ -120,6 +121,7 @@ class Project extends Model
 
             'start_date' => 'date',
             'expected_delivery_date' => 'date',
+            'collection_due_date' => 'date',
             'revised_delivery_date' => 'date',
             'actual_completion_date' => 'date',
             'domain_expiry_date' => 'date',
@@ -370,6 +372,59 @@ class Project extends Model
     public function getIsFullyPaidAttribute(): bool
     {
         return (float) $this->pending_amount <= 0;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Collection ageing accessors
+    |--------------------------------------------------------------------------
+    */
+
+    public function getEffectiveCollectionDueDateAttribute()
+    {
+        return $this->collection_due_date
+            ?: $this->expected_delivery_date;
+    }
+
+    public function getCollectionDaysOverdueAttribute(): int
+    {
+        if (
+            (float) $this->pending_amount <= 0
+            || !$this->effective_collection_due_date
+            || $this->effective_collection_due_date
+                ->isFuture()
+        ) {
+            return 0;
+        }
+
+        return $this
+            ->effective_collection_due_date
+            ->diffInDays(today());
+    }
+
+    public function getCollectionAgeingBucketAttribute(): string
+    {
+        if ((float) $this->pending_amount <= 0) {
+            return 'Fully Paid';
+        }
+
+        if ($this->collection_days_overdue === 0) {
+            return 'Current';
+        }
+
+        return match (true) {
+            $this->collection_days_overdue <= 30 =>
+                '1–30 Days',
+
+            $this->collection_days_overdue <= 60 =>
+                '31–60 Days',
+
+            $this->collection_days_overdue <= 90 =>
+                '61–90 Days',
+
+            default =>
+                '90+ Days',
+        };
     }
 
     /*
@@ -651,3 +706,4 @@ class Project extends Model
             ->latest('created_at');
     }
 }
+

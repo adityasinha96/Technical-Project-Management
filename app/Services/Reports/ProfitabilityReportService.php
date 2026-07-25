@@ -2,88 +2,157 @@
 
 namespace App\Services\Reports;
 
-use App\Enums\ExpenseScope;
-use App\Models\Expense;
-use App\Models\Payment;
+use App\Enums\PaymentKind;
+use App\Enums\PaymentStatus;
+use App\Enums\ProjectStatus;
 use App\Models\Project;
-use Illuminate\Support\Carbon;
+use App\Support\Reports\ReportFilters;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ProfitabilityReportService
 {
-    public function summary(): array
-    {
-        $totalCollection = $this->netCollection();
+    public function summary(
+        ?ReportFilters $filters = null
+    ): array {
+        if ($filters === null) {
+            return $this->dashboardSummary();
+        }
 
-        $projectExpenses = (float) Expense::query()
-            ->effective()
-            ->projectExpenses()
-            ->sum('amount');
+        $projectQuery =
+            $this->projectQuery(
+                $filters
+            );
 
-        $businessExpenses = (float) Expense::query()
-            ->effective()
-            ->businessExpenses()
-            ->sum('amount');
+        $contractValue =
+            (float) (clone $projectQuery)
+                ->sum('project_price');
 
-        $totalExpenses =
-            $projectExpenses +
-            $businessExpenses;
+        $projectExpenses =
+            (float) (clone $projectQuery)
+                ->sum(
+                    'project_expense_amount'
+                );
+
+        $contractProfit =
+            $contractValue
+            - $projectExpenses;
+
+        $generalExpenses =
+            $this->generalExpenses(
+                $filters
+            );
+
+        $netCollections =
+            $this->periodNetCollections(
+                $filters
+            );
+
+        $periodPaidExpenses =
+            $this->periodPaidExpenses(
+                $filters
+            );
 
         return [
-            'contracted_value' =>
-                (float) Project::query()
-                    ->sum('project_price'),
-
-            'total_collection' =>
-                $totalCollection,
-
-            'market_outstanding' =>
-                (float) Project::query()
-                    ->sum('pending_amount'),
+            'contract_value' =>
+                $contractValue,
 
             'project_expenses' =>
                 $projectExpenses,
 
-            'business_expenses' =>
-                $businessExpenses,
+            'contract_profit' =>
+                $contractProfit,
 
-            'total_expenses' =>
-                $totalExpenses,
+            'contract_margin' =>
+                $contractValue > 0
+                    ? round(
+                        $contractProfit
+                        / $contractValue
+                        * 100,
+                        2
+                    )
+                    : 0,
 
-            'contracted_project_profit' =>
-                (float) Project::query()
-                    ->sum('actual_profit_amount'),
+            'general_business_expenses' =>
+                $generalExpenses,
 
-            'business_cash_position' =>
-                round(
-                    $totalCollection -
-                    $totalExpenses,
-                    2
-                ),
+            'contract_profit_after_general_expenses' =>
+                $contractProfit
+                - $generalExpenses,
 
-            'loss_making_projects' =>
-                Project::query()
-                    ->where(
-                        'actual_profit_amount',
-                        '<',
-                        0
+            'period_net_collections' =>
+                $netCollections,
+
+            'period_paid_expenses' =>
+                $periodPaidExpenses,
+
+            'cash_contribution' =>
+                $netCollections
+                - $periodPaidExpenses,
+
+            'profitable_projects' =>
+                (clone $projectQuery)
+                    ->whereColumn(
+                        'project_price',
+                        '>',
+                        'project_expense_amount'
                     )
                     ->count(),
 
-            'cash_negative_projects' =>
-                Project::query()
-                    ->where(
-                        'cash_position_amount',
-                        '<',
-                        0
+            'loss_making_projects' =>
+                (clone $projectQuery)
+                    ->whereColumn(
+                        'project_expense_amount',
+                        '>',
+                        'project_price'
                     )
                     ->count(),
         ];
     }
 
-    public function monthly(
-        int $months = 12
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Compatibility Summaries
+    |--------------------------------------------------------------------------
+    |
+    | Phase 5 dashboard code calls summary(), monthSummary() and monthly()
+    | without report filters. These methods remain available while Phase 9
+    | controllers can continue passing ReportFilters to the filtered APIs.
+    |
+    */
+
+    public function monthSummary(
+        ?CarbonInterface $month = null
     ): array {
-        $rows = [];
+        $period = $month
+            ? $month->copy()
+            : now();
+
+        $from = $period
+            ->copy()
+            ->startOfMonth();
+
+        $to = $period
+            ->copy()
+            ->endOfMonth();
+
+        return $this->dashboardPeriodSummary(
+            $from,
+            $to
+        );
+    }
+
+    public function monthly(
+        int $months = 6
+    ): Collection {
+        $months = max(
+            1,
+            $months
+        );
+
+        $summaries = collect();
 
         for (
             $offset = $months - 1;
@@ -91,192 +160,572 @@ class ProfitabilityReportService
             $offset--
         ) {
             $month = now()
-                ->startOfMonth()
-                ->subMonths($offset);
-
-            $start = $month
                 ->copy()
+                ->subMonths($offset)
                 ->startOfMonth();
 
-            $end = $month
-                ->copy()
-                ->endOfMonth();
-
-            $collection = $this->netCollection(
-                $start,
-                $end
+            $summaries->push(
+                $this->monthSummary(
+                    $month
+                )
             );
-
-            $projectExpenses = (float) Expense::query()
-                ->effective()
-                ->projectExpenses()
-                ->whereBetween('paid_at', [
-                    $start->toDateString(),
-                    $end->toDateString(),
-                ])
-                ->sum('amount');
-
-            $businessExpenses = (float) Expense::query()
-                ->effective()
-                ->businessExpenses()
-                ->whereBetween('paid_at', [
-                    $start->toDateString(),
-                    $end->toDateString(),
-                ])
-                ->sum('amount');
-
-            $totalExpenses =
-                $projectExpenses +
-                $businessExpenses;
-
-            $bookedValue = (float) Project::query()
-                ->whereBetween('created_at', [
-                    $start,
-                    $end,
-                ])
-                ->sum('project_price');
-
-            $rows[] = [
-                'key' => $month->format('Y-m'),
-                'label' => $month->format('M Y'),
-
-                'booked_value' =>
-                    round($bookedValue, 2),
-
-                'collection' =>
-                    round($collection, 2),
-
-                'project_expenses' =>
-                    round($projectExpenses, 2),
-
-                'business_expenses' =>
-                    round($businessExpenses, 2),
-
-                'total_expenses' =>
-                    round($totalExpenses, 2),
-
-                'cash_profit' =>
-                    round(
-                        $collection -
-                        $totalExpenses,
-                        2
-                    ),
-            ];
         }
 
-        $maximum = collect($rows)
-            ->flatMap(
-                fn (array $row): array => [
-                    abs($row['collection']),
-                    abs($row['total_expenses']),
-                    abs($row['cash_profit']),
+        return $summaries;
+    }
+
+    public function monthlyCashMovement(
+        ReportFilters $filters
+    ): Collection {
+        $collections = DB::table('payments')
+            ->selectRaw(
+                "DATE_FORMAT(payment_date, '%Y-%m') as period"
+            )
+            ->selectRaw(
+                'SUM(CASE WHEN kind = ? THEN amount ELSE -amount END) as net_collection',
+                [
+                    PaymentKind::Receipt->value,
                 ]
             )
-            ->max() ?: 1;
+            ->where(
+                'status',
+                PaymentStatus::Cleared->value
+            )
+            ->whereNull('voided_at')
+            ->whereBetween(
+                'payment_date',
+                [
+                    $filters->from
+                        ->toDateString(),
 
-        return [
-            'rows' => $rows,
-            'maximum' => (float) $maximum,
-        ];
-    }
+                    $filters->to
+                        ->toDateString(),
+                ]
+            )
+            ->when(
+                $filters->projectId,
+                fn ($query) =>
+                    $query->where(
+                        'project_id',
+                        $filters->projectId
+                    )
+            )
+            ->groupBy('period')
+            ->pluck(
+                'net_collection',
+                'period'
+            );
 
-    public function monthSummary(
-        ?Carbon $month = null
-    ): array {
-        $month ??= now();
+        $expenses = DB::table('expenses')
+            ->selectRaw(
+                "DATE_FORMAT(expense_date, '%Y-%m') as period"
+            )
+            ->selectRaw(
+                'SUM(amount) as total_expense'
+            )
+            ->whereNull('voided_at')
+            ->whereNotNull('paid_at')
+            ->whereBetween(
+                'expense_date',
+                [
+                    $filters->from
+                        ->toDateString(),
 
-        $start = $month
-            ->copy()
+                    $filters->to
+                        ->toDateString(),
+                ]
+            )
+            ->when(
+                $filters->projectId,
+                fn ($query) =>
+                    $query->where(
+                        'project_id',
+                        $filters->projectId
+                    )
+            )
+            ->groupBy('period')
+            ->pluck(
+                'total_expense',
+                'period'
+            );
+
+        $trend = collect();
+
+        $cursor = $filters->from
             ->startOfMonth();
 
-        $end = $month
-            ->copy()
-            ->endOfMonth();
+        while (
+            $cursor->lessThanOrEqualTo(
+                $filters->to
+            )
+        ) {
+            $key = $cursor->format('Y-m');
 
-        $collection = $this->netCollection(
-            $start,
-            $end
-        );
+            $collection =
+                (float) (
+                    $collections[$key]
+                    ?? 0
+                );
 
-        $projectExpenses = (float) Expense::query()
-            ->effective()
-            ->projectExpenses()
-            ->whereBetween('paid_at', [
-                $start->toDateString(),
-                $end->toDateString(),
+            $expense =
+                (float) (
+                    $expenses[$key]
+                    ?? 0
+                );
+
+            $trend->push([
+                'period' => $key,
+
+                'label' =>
+                    $cursor->format('M Y'),
+
+                'collections' =>
+                    $collection,
+
+                'expenses' =>
+                    $expense,
+
+                'cash_contribution' =>
+                    $collection - $expense,
+            ]);
+
+            $cursor = $cursor->addMonth();
+        }
+
+        return $trend;
+    }
+
+    public function expenseCategoryBreakdown(
+        ReportFilters $filters
+    ): Collection {
+        return DB::table('expenses')
+            ->leftJoin(
+                'expense_categories',
+                'expense_categories.id',
+                '=',
+                'expenses.expense_category_id'
+            )
+            ->selectRaw(
+                "COALESCE(expense_categories.name, 'Uncategorised') as category"
+            )
+            ->selectRaw(
+                'SUM(expenses.amount) as total_amount'
+            )
+            ->selectRaw(
+                'COUNT(expenses.id) as expense_count'
+            )
+            ->whereNull(
+                'expenses.voided_at'
+            )
+            ->whereNotNull(
+                'expenses.paid_at'
+            )
+            ->whereBetween(
+                'expenses.expense_date',
+                [
+                    $filters->from
+                        ->toDateString(),
+
+                    $filters->to
+                        ->toDateString(),
+                ]
+            )
+            ->when(
+                $filters->projectId,
+                fn ($query) =>
+                    $query->where(
+                        'expenses.project_id',
+                        $filters->projectId
+                    )
+            )
+            ->groupBy(
+                'expense_categories.name'
+            )
+            ->orderByDesc(
+                'total_amount'
+            )
+            ->get();
+    }
+
+    public function paginatedProjects(
+        ReportFilters $filters
+    ) {
+        return $this->projectQuery(
+            $filters
+        )
+            ->with([
+                'client',
+                'manager',
             ])
-            ->sum('amount');
+            ->select('projects.*')
+            ->selectRaw(
+                '(project_price - project_expense_amount) as calculated_profit'
+            )
+            ->selectRaw(
+                'CASE
+                    WHEN project_price > 0
+                    THEN ((project_price - project_expense_amount) / project_price) * 100
+                    ELSE 0
+                END as calculated_margin'
+            )
+            ->orderByDesc(
+                'calculated_profit'
+            )
+            ->paginate(
+                $filters->perPage
+            )
+            ->withQueryString();
+    }
 
-        $businessExpenses = (float) Expense::query()
-            ->effective()
-            ->businessExpenses()
-            ->whereBetween('paid_at', [
-                $start->toDateString(),
-                $end->toDateString(),
+    public function exportQuery(
+        ReportFilters $filters
+    ): Builder {
+        return $this->projectQuery(
+            $filters
+        )
+            ->with([
+                'client',
+                'manager',
             ])
-            ->sum('amount');
+            ->select('projects.*')
+            ->selectRaw(
+                '(project_price - project_expense_amount) as calculated_profit'
+            )
+            ->selectRaw(
+                'CASE
+                    WHEN project_price > 0
+                    THEN ((project_price - project_expense_amount) / project_price) * 100
+                    ELSE 0
+                END as calculated_margin'
+            )
+            ->orderBy('projects.id');
+    }
 
-        $totalExpenses =
-            $projectExpenses +
-            $businessExpenses;
+    private function dashboardSummary(): array
+    {
+        $contractValue =
+            (float) Project::query()
+                ->sum('project_price');
+
+        $projectExpenses =
+            (float) Project::query()
+                ->sum(
+                    'project_expense_amount'
+                );
+
+        $contractProfit =
+            $contractValue
+            - $projectExpenses;
+
+        $netCollections =
+            (float) Project::query()
+                ->sum(
+                    'net_received_amount'
+                );
+
+        $paidExpenses =
+            (float) DB::table('expenses')
+                ->whereNull('voided_at')
+                ->whereNotNull('paid_at')
+                ->sum('amount');
+
+        $generalExpenses =
+            (float) DB::table('expenses')
+                ->whereNull('project_id')
+                ->whereNull('voided_at')
+                ->whereNotNull('paid_at')
+                ->sum('amount');
 
         return [
-            'month' => $month->format('F Y'),
-            'collection' => round($collection, 2),
+            /*
+            |--------------------------------------------------------------------------
+            | Phase 9 summary keys
+            |--------------------------------------------------------------------------
+            */
+
+            'contract_value' =>
+                $contractValue,
 
             'project_expenses' =>
-                round($projectExpenses, 2),
+                $projectExpenses,
 
-            'business_expenses' =>
-                round($businessExpenses, 2),
+            'contract_profit' =>
+                $contractProfit,
 
-            'total_expenses' =>
-                round($totalExpenses, 2),
+            'contract_margin' =>
+                $contractValue > 0
+                    ? round(
+                        $contractProfit
+                        / $contractValue
+                        * 100,
+                        2
+                    )
+                    : 0,
 
-            'cash_profit' =>
-                round(
-                    $collection -
-                    $totalExpenses,
-                    2
-                ),
+            'general_business_expenses' =>
+                $generalExpenses,
+
+            'contract_profit_after_general_expenses' =>
+                $contractProfit
+                - $generalExpenses,
+
+            'period_net_collections' =>
+                $netCollections,
+
+            'period_paid_expenses' =>
+                $paidExpenses,
+
+            'cash_contribution' =>
+                $netCollections
+                - $paidExpenses,
+
+            'profitable_projects' =>
+                Project::query()
+                    ->whereColumn(
+                        'project_price',
+                        '>',
+                        'project_expense_amount'
+                    )
+                    ->count(),
+
+            'loss_making_projects' =>
+                Project::query()
+                    ->whereColumn(
+                        'project_expense_amount',
+                        '>',
+                        'project_price'
+                    )
+                    ->count(),
+
+            /*
+            |--------------------------------------------------------------------------
+            | Existing Phase 5 dashboard keys
+            |--------------------------------------------------------------------------
+            */
+
+            'total_project_value' =>
+                $contractValue,
+
+            'total_project_expenses' =>
+                $projectExpenses,
+
+            'actual_project_profit' =>
+                $contractProfit,
+
+            'total_received' =>
+                $netCollections,
+
+            'total_paid_expenses' =>
+                $paidExpenses,
+
+            'business_cash_position' =>
+                $netCollections
+                - $paidExpenses,
         ];
     }
 
-    private function netCollection(
-        ?Carbon $start = null,
-        ?Carbon $end = null
+    private function dashboardPeriodSummary(
+        CarbonInterface $from,
+        CarbonInterface $to
+    ): array {
+        $collectionRow =
+            DB::table('payments')
+                ->selectRaw(
+                    'SUM(CASE WHEN kind = ? THEN amount ELSE -amount END) as net_amount',
+                    [
+                        PaymentKind::Receipt
+                            ->value,
+                    ]
+                )
+                ->where(
+                    'status',
+                    PaymentStatus::Cleared
+                        ->value
+                )
+                ->whereNull('voided_at')
+                ->whereBetween(
+                    'payment_date',
+                    [
+                        $from->toDateString(),
+                        $to->toDateString(),
+                    ]
+                )
+                ->first();
+
+        $collection =
+            (float) (
+                $collectionRow
+                    ?->net_amount
+                ?? 0
+            );
+
+        $totalExpenses =
+            (float) DB::table('expenses')
+                ->whereNull('voided_at')
+                ->whereNotNull('paid_at')
+                ->whereBetween(
+                    'expense_date',
+                    [
+                        $from->toDateString(),
+                        $to->toDateString(),
+                    ]
+                )
+                ->sum('amount');
+
+        return [
+            'period' =>
+                $from->format('Y-m'),
+
+            'label' =>
+                $from->format('M Y'),
+
+            'from' =>
+                $from->toDateString(),
+
+            'to' =>
+                $to->toDateString(),
+
+            'collection' =>
+                $collection,
+
+            'total_expenses' =>
+                $totalExpenses,
+
+            'cash_profit' =>
+                $collection
+                - $totalExpenses,
+        ];
+    }
+
+    private function projectQuery(
+        ReportFilters $filters
+    ): Builder {
+        return Project::query()
+            ->whereBetween(
+                'start_date',
+                [
+                    $filters->from
+                        ->toDateString(),
+
+                    $filters->to
+                        ->toDateString(),
+                ]
+            )
+            ->whereNotIn('status', [
+                ProjectStatus::Cancelled->value,
+            ])
+            ->when(
+                $filters->projectId,
+                fn (Builder $query) =>
+                    $query->whereKey(
+                        $filters->projectId
+                    )
+            )
+            ->when(
+                $filters->clientId,
+                fn (Builder $query) =>
+                    $query->where(
+                        'client_id',
+                        $filters->clientId
+                    )
+            )
+            ->when(
+                $filters->projectStatus,
+                fn (Builder $query) =>
+                    $query->where(
+                        'status',
+                        $filters
+                            ->projectStatus
+                    )
+            );
+    }
+
+    private function generalExpenses(
+        ReportFilters $filters
     ): float {
-        $receiptsQuery = Payment::query()
-            ->effective()
-            ->receipts();
+        return (float) DB::table('expenses')
+            ->whereNull('project_id')
+            ->whereNull('voided_at')
+            ->whereNotNull('paid_at')
+            ->whereBetween(
+                'expense_date',
+                [
+                    $filters->from
+                        ->toDateString(),
 
-        $refundsQuery = Payment::query()
-            ->effective()
-            ->refunds();
+                    $filters->to
+                        ->toDateString(),
+                ]
+            )
+            ->sum('amount');
+    }
 
-        if ($start && $end) {
-            $range = [
-                $start->toDateString(),
-                $end->toDateString(),
-            ];
+    private function periodPaidExpenses(
+        ReportFilters $filters
+    ): float {
+        return (float) DB::table('expenses')
+            ->whereNull('voided_at')
+            ->whereNotNull('paid_at')
+            ->whereBetween(
+                'expense_date',
+                [
+                    $filters->from
+                        ->toDateString(),
 
-            $receiptsQuery
-                ->whereBetween(
-                    'payment_date',
-                    $range
-                );
+                    $filters->to
+                        ->toDateString(),
+                ]
+            )
+            ->when(
+                $filters->projectId,
+                fn ($query) =>
+                    $query->where(
+                        'project_id',
+                        $filters->projectId
+                    )
+            )
+            ->sum('amount');
+    }
 
-            $refundsQuery
-                ->whereBetween(
-                    'payment_date',
-                    $range
-                );
-        }
+    private function periodNetCollections(
+        ReportFilters $filters
+    ): float {
+        $row = DB::table('payments')
+            ->selectRaw(
+                'SUM(CASE WHEN kind = ? THEN amount ELSE -amount END) as net_amount',
+                [
+                    PaymentKind::Receipt->value,
+                ]
+            )
+            ->where(
+                'status',
+                PaymentStatus::Cleared->value
+            )
+            ->whereNull('voided_at')
+            ->whereBetween(
+                'payment_date',
+                [
+                    $filters->from
+                        ->toDateString(),
 
-        return round(
-            (float) $receiptsQuery->sum('amount') -
-            (float) $refundsQuery->sum('amount'),
-            2
+                    $filters->to
+                        ->toDateString(),
+                ]
+            )
+            ->when(
+                $filters->projectId,
+                fn ($query) =>
+                    $query->where(
+                        'project_id',
+                        $filters->projectId
+                    )
+            )
+            ->first();
+
+        return (float) (
+            $row?->net_amount
+            ?? 0
         );
     }
 }
+

@@ -208,4 +208,12 @@ class User extends Authenticatable implements MustVerifyEmail
                 'daily_digest_time' => '08:30:00',
             ]);
     }
+
+    public function reportExports(): HasMany
+    {
+        return $this->hasMany(
+            ReportExport::class,
+            'generated_by'
+        );
+    }
 }

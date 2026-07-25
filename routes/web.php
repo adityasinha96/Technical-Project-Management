@@ -19,6 +19,8 @@ use App\Http\Controllers\ProjectNoteController;
 use App\Http\Controllers\ProjectTaskController;
 use App\Http\Controllers\ProjectTemplateController;
 use App\Http\Controllers\ProjectWorkLogController;
+use App\Http\Controllers\Reports\ReportController;
+use App\Http\Controllers\Reports\ReportExportController;
 use App\Http\Controllers\TicketCommentController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\TicketEscalationController;
@@ -836,6 +838,70 @@ Route::middleware([
 
     /*
     |--------------------------------------------------------------------------
+    | Reports and Analytics
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/reports',
+        [ReportController::class, 'index']
+    )
+        ->middleware('can:reports.view')
+        ->name('reports.index');
+
+    Route::get(
+        '/reports/projects',
+        [ReportController::class, 'projects']
+    )
+        ->middleware('can:reports.view')
+        ->name('reports.projects');
+
+    Route::get(
+        '/reports/team-performance',
+        [ReportController::class, 'team']
+    )
+        ->middleware('can:reports.view-team')
+        ->name('reports.team');
+
+    Route::get(
+        '/reports/collections',
+        [ReportController::class, 'collections']
+    )
+        ->middleware('can:reports.view-financial')
+        ->name('reports.collections');
+
+    Route::get(
+        '/reports/profitability',
+        [ReportController::class, 'profitability']
+    )
+        ->middleware('can:reports.view-financial')
+        ->name('reports.profitability');
+
+    Route::get(
+        '/reports/ticket-sla',
+        [ReportController::class, 'ticketSla']
+    )
+        ->middleware('can:reports.view-ticket-sla')
+        ->name('reports.ticket-sla');
+
+    Route::post(
+        '/reports/export',
+        [ReportExportController::class, 'store']
+    )
+        ->middleware('can:reports.export')
+        ->name('reports.export');
+
+    Route::get(
+        '/reports/export-history',
+        [ReportExportController::class, 'index']
+    )
+        ->middleware(
+            'can:reports.view-export-history'
+        )
+        ->name('reports.exports');
+
+    /*
+    |--------------------------------------------------------------------------
     | Profitability
     |--------------------------------------------------------------------------
     */
@@ -847,3 +913,4 @@ Route::middleware([
         ->middleware('can:reports.profitability')
         ->name('profitability.index');
 });
+

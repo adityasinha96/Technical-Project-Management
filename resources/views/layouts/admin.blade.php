@@ -457,6 +457,68 @@
                 </a>
             @endcan
 
+            {{-- Reports and Analytics --}}
+            @can('reports.view')
+                <a
+                    href="{{ route('reports.index') }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{
+                            request()->routeIs(
+                                'reports.index',
+                                'reports.projects',
+                                'reports.team',
+                                'reports.collections',
+                                'reports.profitability',
+                                'reports.ticket-sla'
+                            )
+                                ? 'bg-white/10 text-white'
+                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                        }}"
+                >
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-300">
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M4 19V9"/>
+                            <path d="M10 19V5"/>
+                            <path d="M16 19v-7"/>
+                            <path d="M22 19V3"/>
+                        </svg>
+                    </span>
+
+                    <span x-show="!sidebarCollapsed">
+                        Reports & Analytics
+                    </span>
+                </a>
+            @endcan
+
+            {{-- Report Exports --}}
+            @can('reports.view-export-history')
+                <a
+                    href="{{ route('reports.exports') }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{
+                            request()->routeIs(
+                                'reports.exports'
+                            )
+                                ? 'bg-white/10 text-white'
+                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                        }}"
+                >
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5">
+                        ↓
+                    </span>
+
+                    <span x-show="!sidebarCollapsed">
+                        Report Exports
+                    </span>
+                </a>
+            @endcan
+
             {{-- Future modules --}}
             <div class="mt-4 space-y-1">
                 <p

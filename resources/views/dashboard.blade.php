@@ -1565,6 +1565,25 @@
                     </div>
                 </a>
             @endcan
+
+            @can('reports.view')
+                <a
+                    href="{{ route('reports.index') }}"
+                    class="group rounded-3xl border border-indigo-200 bg-indigo-50 p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                    <p class="text-sm font-bold text-indigo-700">
+                        Management Reports
+                    </p>
+
+                    <p class="mt-2 text-2xl font-black text-indigo-950">
+                        Open Analytics
+                    </p>
+
+                    <p class="mt-2 text-sm text-indigo-700">
+                        Projects, collections, profitability, team and SLA insights.
+                    </p>
+                </a>
+            @endcan
         </section>
     </div>
 @endsection

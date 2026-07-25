@@ -227,7 +227,11 @@ class RolesAndPermissionsSeeder extends Seeder
             */
 
             'reports.view',
+            'reports.view-financial',
+            'reports.view-team',
+            'reports.view-ticket-sla',
             'reports.export',
+            'reports.view-export-history',
             'reports.profitability',
 
             /*
@@ -376,6 +380,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'notifications.view-delivery-history',
 
             'reports.view',
+            'reports.view-team',
+            'reports.view-ticket-sla',
+            'reports.export',
             'reports.profitability',
         ]);
 
@@ -433,7 +440,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'notifications.manage-preferences',
 
             'reports.view',
+            'reports.view-financial',
             'reports.export',
+            'reports.view-export-history',
             'reports.profitability',
         ]);
 
@@ -491,6 +500,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'notifications.view',
             'notifications.manage-preferences',
+
+            'reports.view',
         ]);
 
         /*
