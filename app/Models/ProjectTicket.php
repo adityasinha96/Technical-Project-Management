@@ -63,6 +63,17 @@ class ProjectTicket extends Model
         'reopened_by',
         'reopen_reason',
 
+        /*
+        |--------------------------------------------------------------------------
+        | Client portal fields
+        |--------------------------------------------------------------------------
+        */
+        'client_visible',
+        'client_can_reply',
+        'submitted_by_client_user_id',
+        'client_last_replied_at',
+        'client_closed_at',
+
         'created_by',
         'updated_by',
     ];
@@ -96,6 +107,16 @@ class ProjectTicket extends Model
             'closed_at' => 'datetime',
             'reopened_at' => 'datetime',
             'reopen_count' => 'integer',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Client portal casts
+            |--------------------------------------------------------------------------
+            */
+            'client_visible' => 'boolean',
+            'client_can_reply' => 'boolean',
+            'client_last_replied_at' => 'datetime',
+            'client_closed_at' => 'datetime',
         ];
     }
 
@@ -107,6 +128,14 @@ class ProjectTicket extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function submittedByClient(): BelongsTo
+    {
+        return $this->belongsTo(
+            ClientUser::class,
+            'submitted_by_client_user_id'
+        );
     }
 
     public function assignedTo(): BelongsTo
@@ -379,3 +408,4 @@ class ProjectTicket extends Model
                 $user->id;
     }
 }
+

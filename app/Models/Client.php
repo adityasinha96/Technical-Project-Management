@@ -101,4 +101,11 @@ class Client extends Model
             ProjectTicket::class
         );
     }
+
+    public function portalUsers(): HasMany
+    {
+        return $this->hasMany(
+            ClientUser::class
+        );
+    }
 }

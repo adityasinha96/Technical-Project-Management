@@ -46,7 +46,7 @@ Route::get('/', function () {
 */
 
 Route::middleware([
-    'auth',
+    'auth:web',
     'verified',
     'active',
 ])->group(function (): void {
@@ -913,4 +913,3 @@ Route::middleware([
         ->middleware('can:reports.profitability')
         ->name('profitability.index');
 });
-

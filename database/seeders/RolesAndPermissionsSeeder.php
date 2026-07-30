@@ -236,6 +236,21 @@ class RolesAndPermissionsSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
+            | Client Portal
+            |--------------------------------------------------------------------------
+            */
+
+            'client-portal.view',
+            'client-portal.manage',
+            'client-portal.invite',
+            'client-portal.revoke',
+            'client-portal.share-files',
+            'client-portal.submit-approvals',
+            'client-portal.manage-ticket-visibility',
+            'client-portal.communicate',
+
+            /*
+            |--------------------------------------------------------------------------
             | Settings
             |--------------------------------------------------------------------------
             */
@@ -384,6 +399,15 @@ class RolesAndPermissionsSeeder extends Seeder
             'reports.view-ticket-sla',
             'reports.export',
             'reports.profitability',
+
+            'client-portal.view',
+            'client-portal.manage',
+            'client-portal.invite',
+            'client-portal.revoke',
+            'client-portal.share-files',
+            'client-portal.submit-approvals',
+            'client-portal.manage-ticket-visibility',
+            'client-portal.communicate',
         ]);
 
         /*
@@ -444,6 +468,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'reports.export',
             'reports.view-export-history',
             'reports.profitability',
+
+            'client-portal.view',
+            'client-portal.communicate',
         ]);
 
         /*
@@ -502,6 +529,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'notifications.manage-preferences',
 
             'reports.view',
+
+            'client-portal.view',
+            'client-portal.communicate',
         ]);
 
         /*
@@ -550,4 +580,3 @@ class RolesAndPermissionsSeeder extends Seeder
             ->forgetCachedPermissions();
     }
 }
-

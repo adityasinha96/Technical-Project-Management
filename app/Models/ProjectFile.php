@@ -33,6 +33,16 @@ class ProjectFile extends Model
         'checksum_sha256',
         'download_count',
         'last_downloaded_at',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Client portal fields
+        |--------------------------------------------------------------------------
+        */
+        'client_visible',
+        'shared_with_client_at',
+        'shared_with_client_by',
+        'uploaded_by_client_user_id',
     ];
 
     protected function casts(): array
@@ -48,6 +58,14 @@ class ProjectFile extends Model
             'is_private' => 'boolean',
             'download_count' => 'integer',
             'last_downloaded_at' => 'datetime',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Client portal casts
+            |--------------------------------------------------------------------------
+            */
+            'client_visible' => 'boolean',
+            'shared_with_client_at' => 'datetime',
         ];
     }
 
@@ -67,6 +85,22 @@ class ProjectFile extends Model
         return $this->belongsTo(
             User::class,
             'uploaded_by'
+        );
+    }
+
+    public function sharedWithClientBy(): BelongsTo
+    {
+        return $this->belongsTo(
+            User::class,
+            'shared_with_client_by'
+        );
+    }
+
+    public function uploadedByClient(): BelongsTo
+    {
+        return $this->belongsTo(
+            ClientUser::class,
+            'uploaded_by_client_user_id'
         );
     }
 
@@ -193,3 +227,4 @@ class ProjectFile extends Model
         return $bytes . ' Bytes';
     }
 }
+

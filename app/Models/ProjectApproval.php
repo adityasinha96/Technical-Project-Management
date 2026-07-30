@@ -29,6 +29,19 @@ class ProjectApproval extends Model
         'client_remarks',
         'internal_remarks',
         'proof_file_id',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Client approval fields
+        |--------------------------------------------------------------------------
+        */
+        'is_client_visible',
+        'submitted_to_client_at',
+        'submitted_to_client_by',
+        'client_decision',
+        'client_feedback',
+        'client_decided_at',
+        'client_decided_by',
     ];
 
     protected function casts(): array
@@ -39,6 +52,19 @@ class ProjectApproval extends Model
             'submission_number' => 'integer',
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Client approval casts
+            |--------------------------------------------------------------------------
+            */
+            'is_client_visible' => 'boolean',
+
+            'client_decision' =>
+                \App\Enums\ClientApprovalDecision::class,
+
+            'submitted_to_client_at' => 'datetime',
+            'client_decided_at' => 'datetime',
         ];
     }
 
@@ -77,6 +103,22 @@ class ProjectApproval extends Model
         );
     }
 
+    public function submittedToClientBy(): BelongsTo
+    {
+        return $this->belongsTo(
+            User::class,
+            'submitted_to_client_by'
+        );
+    }
+
+    public function clientDecidedBy(): BelongsTo
+    {
+        return $this->belongsTo(
+            ClientUser::class,
+            'client_decided_by'
+        );
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Project activity logging configuration
@@ -104,3 +146,4 @@ class ProjectApproval extends Model
         return ActivityVisibility::Management;
     }
 }
+

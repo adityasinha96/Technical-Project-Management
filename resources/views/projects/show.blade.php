@@ -133,23 +133,34 @@
         </section>
 
         {{-- Project navigation tabs --}}
+        @php
+            $projectTabs = [
+                'overview' => 'Overview',
+                'tasks' => 'Tasks',
+                'tickets' => 'Tickets',
+                'approvals' => 'Approvals',
+                'payments' => 'Payments',
+                'expenses' => 'Expenses & Profit',
+                'notes' => 'Notes',
+                'work-logs' => 'Work Logs',
+                'history' => 'Complete History',
+                'attachments' => 'Attachments',
+                'team' => 'Team',
+                'files' => 'Files',
+            ];
+
+            if (auth()->user()->can('client-portal.view')) {
+                $projectTabs['client-portal'] =
+                    'Client Portal';
+            }
+
+            $projectTabs['technical'] =
+                'Technical Details';
+        @endphp
+
         <nav class="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
             <div class="flex min-w-max gap-2">
-                @foreach ([
-                    'overview' => 'Overview',
-                    'tasks' => 'Tasks',
-                    'tickets' => 'Tickets',
-                    'approvals' => 'Approvals',
-                    'payments' => 'Payments',
-                    'expenses' => 'Expenses & Profit',
-                    'notes' => 'Notes',
-                    'work-logs' => 'Work Logs',
-                    'history' => 'Complete History',
-                    'attachments' => 'Attachments',
-                    'team' => 'Team',
-                    'files' => 'Files',
-                    'technical' => 'Technical Details',
-                ] as $key => $label)
+                @foreach ($projectTabs as $key => $label)
                     <button
                         type="button"
                         @click="activeTab = '{{ $key }}'"
@@ -819,6 +830,13 @@
             </section>
         </div>
 
+        {{-- Phase 10 client portal tab partial --}}
+        @can('client-portal.view')
+            @includeIf(
+                'projects.partials.client-portal-tab'
+            )
+        @endcan
+
         {{-- Technical details tab --}}
         <div
             x-show="activeTab === 'technical'"
@@ -936,3 +954,4 @@
         </div>
     </div>
 @endsection
+

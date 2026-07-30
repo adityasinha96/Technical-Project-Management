@@ -19,6 +19,14 @@ class TicketComment extends Model
         'created_by',
         'edited_by',
         'edited_at',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Client portal fields
+        |--------------------------------------------------------------------------
+        */
+        'visibility',
+        'client_user_id',
     ];
 
     protected function casts(): array
@@ -26,6 +34,9 @@ class TicketComment extends Model
         return [
             'comment_type' =>
                 TicketCommentType::class,
+
+            'visibility' =>
+                \App\Enums\TicketCommentVisibility::class,
 
             'edited_at' => 'datetime',
         ];
@@ -55,12 +66,25 @@ class TicketComment extends Model
         );
     }
 
+    public function clientUser(): BelongsTo
+    {
+        return $this->belongsTo(
+            ClientUser::class
+        );
+    }
+
     public function fileLinks(): MorphMany
     {
         return $this->morphMany(
             ProjectFileLink::class,
             'fileable'
         );
+    }
+
+    public function isVisibleToClient(): bool
+    {
+        return $this->visibility ===
+            \App\Enums\TicketCommentVisibility::Client;
     }
 
     public function canBeManagedBy(
@@ -71,3 +95,4 @@ class TicketComment extends Model
             || $this->created_by === $user->id;
     }
 }
+

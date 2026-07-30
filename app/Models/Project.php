@@ -84,6 +84,16 @@ class Project extends Model
 
         /*
         |--------------------------------------------------------------------------
+        | Phase 10 client portal fields
+        |--------------------------------------------------------------------------
+        */
+        'client_portal_enabled',
+        'client_portal_summary',
+        'client_portal_enabled_at',
+        'client_portal_enabled_by',
+
+        /*
+        |--------------------------------------------------------------------------
         | Phase 6 activity fields
         |--------------------------------------------------------------------------
         */
@@ -126,6 +136,14 @@ class Project extends Model
             'actual_completion_date' => 'date',
             'domain_expiry_date' => 'date',
             'hosting_expiry_date' => 'date',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Phase 10 client portal casts
+            |--------------------------------------------------------------------------
+            */
+            'client_portal_enabled' => 'boolean',
+            'client_portal_enabled_at' => 'datetime',
 
             /*
             |--------------------------------------------------------------------------
@@ -200,6 +218,51 @@ class Project extends Model
         return $this->belongsTo(
             User::class,
             'updated_by'
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Phase 10 client portal relationships
+    |--------------------------------------------------------------------------
+    */
+
+    public function clientUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ClientUser::class,
+            'client_project_access'
+        )
+            ->using(ClientProjectAccess::class)
+            ->withPivot([
+                'id',
+                'role',
+                'can_view_project',
+                'can_view_financials',
+                'can_approve',
+                'can_submit_tickets',
+                'can_view_files',
+                'can_communicate',
+                'is_active',
+                'granted_by',
+                'granted_at',
+                'revoked_at',
+                'revoked_by',
+            ])
+            ->withTimestamps();
+    }
+
+    public function clientAccessRecords(): HasMany
+    {
+        return $this->hasMany(
+            ClientProjectAccess::class
+        );
+    }
+
+    public function clientCommunications(): HasMany
+    {
+        return $this->hasMany(
+            ClientCommunication::class
         );
     }
 

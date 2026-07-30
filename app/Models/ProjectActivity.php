@@ -156,6 +156,30 @@ class ProjectActivity extends Model
             'ticket_comment_deleted' =>
                 'bg-red-50 text-red-700',
 
+            /*
+            |--------------------------------------------------------------------------
+            | Phase 10 client portal activity colours
+            |--------------------------------------------------------------------------
+            */
+
+            'client_portal_enabled',
+            'client_user_invited',
+            'client_file_shared' =>
+                'bg-blue-50 text-blue-700',
+
+            'client_approval_approved' =>
+                'bg-emerald-50 text-emerald-700',
+
+            'client_approval_changes_requested' =>
+                'bg-red-50 text-red-700',
+
+            'client_ticket_created',
+            'client_message_sent' =>
+                'bg-indigo-50 text-indigo-700',
+
+            'client_access_revoked' =>
+                'bg-orange-50 text-orange-700',
+
             default =>
                 'bg-slate-100 text-slate-700',
         };
@@ -169,3 +193,4 @@ class ProjectActivity extends Model
             ->toString();
     }
 }
+
