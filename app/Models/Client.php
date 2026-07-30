@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ClientStatus;
+use App\Traits\AuditsSystemChanges;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,7 @@ class Client extends Model
 {
     use HasFactory;
     use SoftDeletes;
+    use AuditsSystemChanges;
 
     protected $fillable = [
         'client_code',
@@ -33,6 +35,20 @@ class Client extends Model
         'created_by',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | System Audit Exclusions
+    |--------------------------------------------------------------------------
+    |
+    | The routine updated_at timestamp is excluded so audit records focus on
+    | meaningful client data changes.
+    |
+    */
+
+    protected array $auditExclude = [
+        'updated_at',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -42,12 +58,17 @@ class Client extends Model
 
     public function projects(): HasMany
     {
-        return $this->hasMany(Project::class);
+        return $this->hasMany(
+            Project::class
+        );
     }
 
     public function createdBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(
+            User::class,
+            'created_by'
+        );
     }
 
     public function scopeSearch(
@@ -56,23 +77,54 @@ class Client extends Model
     ): Builder {
         return $query->when(
             filled($search),
-            function (Builder $query) use ($search): void {
-                $query->where(function (Builder $query) use ($search): void {
-                    $query
-                        ->where('name', 'like', "%{$search}%")
-                        ->orWhere('company_name', 'like', "%{$search}%")
-                        ->orWhere('client_code', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('whatsapp', 'like', "%{$search}%");
-                });
+            function (
+                Builder $query
+            ) use ($search): void {
+                $query->where(
+                    function (
+                        Builder $query
+                    ) use ($search): void {
+                        $query
+                            ->where(
+                                'name',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'company_name',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'client_code',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'email',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'phone',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'whatsapp',
+                                'like',
+                                "%{$search}%"
+                            );
+                    }
+                );
             }
         );
     }
 
     public function getDisplayNameAttribute(): string
     {
-        return $this->company_name ?: $this->name;
+        return $this->company_name
+            ?: $this->name;
     }
 
     public function getLocationAttribute(): ?string
@@ -80,19 +132,27 @@ class Client extends Model
         $location = collect([
             $this->city,
             $this->state,
-        ])->filter()->implode(', ');
+        ])
+            ->filter()
+            ->implode(', ');
 
-        return $location !== '' ? $location : null;
+        return $location !== ''
+            ? $location
+            : null;
     }
 
     public function payments(): HasMany
     {
-        return $this->hasMany(Payment::class);
+        return $this->hasMany(
+            Payment::class
+        );
     }
 
     public function paymentFollowups(): HasMany
     {
-        return $this->hasMany(PaymentFollowup::class);
+        return $this->hasMany(
+            PaymentFollowup::class
+        );
     }
 
     public function tickets(): HasMany
@@ -109,3 +169,4 @@ class Client extends Model
         );
     }
 }
+

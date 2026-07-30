@@ -1,5 +1,18 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\BackupController;
+use App\Http\Controllers\Admin\LoginHistoryController;
+use App\Http\Controllers\Admin\PermissionHistoryController;
+use App\Http\Controllers\Admin\SecurityConfirmationController;
+use App\Http\Controllers\Admin\SecurityControlCenterController;
+use App\Http\Controllers\Admin\SecurityIncidentController;
+use App\Http\Controllers\Admin\SecuritySessionController;
+use App\Http\Controllers\Admin\ClientPortalApprovalController;
+use App\Http\Controllers\Admin\ClientPortalFileController;
+use App\Http\Controllers\Admin\ClientPortalProjectController;
+use App\Http\Controllers\Admin\ClientPortalTicketController;
+use App\Http\Controllers\Admin\ClientPortalUserController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseCategoryController;
@@ -49,6 +62,8 @@ Route::middleware([
     'auth:web',
     'verified',
     'active',
+    'security.session',
+    'security.response',
 ])->group(function (): void {
 
     /*
@@ -63,6 +78,172 @@ Route::middleware([
     )
         ->middleware('can:dashboard.view')
         ->name('dashboard');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Administrative Security Control Centre
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/security',
+        SecurityControlCenterController::class
+    )
+        ->middleware(
+            'can:security.view-control-centre'
+        )
+        ->name('security.index');
+
+    Route::get(
+        '/security/audit-logs',
+        [AuditLogController::class, 'index']
+    )
+        ->middleware(
+            'can:security.view-audit-logs'
+        )
+        ->name('security.audit.index');
+
+    Route::get(
+        '/security/audit-logs/{auditLog}',
+        [AuditLogController::class, 'show']
+    )
+        ->middleware(
+            'can:security.view-audit-logs'
+        )
+        ->name('security.audit.show');
+
+    Route::get(
+        '/security/login-history',
+        [LoginHistoryController::class, 'index']
+    )
+        ->middleware(
+            'can:security.view-login-history'
+        )
+        ->name(
+            'security.login-history.index'
+        );
+
+    Route::get(
+        '/security/permission-history',
+        [
+            PermissionHistoryController::class,
+            'index',
+        ]
+    )
+        ->middleware(
+            'can:security.view-permission-history'
+        )
+        ->name(
+            'security.permissions.index'
+        );
+
+    Route::get(
+        '/security/incidents',
+        [SecurityIncidentController::class, 'index']
+    )
+        ->middleware(
+            'can:security.view-incidents'
+        )
+        ->name('security.incidents.index');
+
+    Route::get(
+        '/security/incidents/{securityIncident}',
+        [SecurityIncidentController::class, 'show']
+    )
+        ->middleware(
+            'can:security.view-incidents'
+        )
+        ->name('security.incidents.show');
+
+    Route::put(
+        '/security/incidents/{securityIncident}',
+        [SecurityIncidentController::class, 'update']
+    )
+        ->middleware([
+            'can:security.manage-incidents',
+            'security.reconfirm',
+        ])
+        ->name('security.incidents.update');
+
+    Route::get(
+        '/security/sessions',
+        [SecuritySessionController::class, 'index']
+    )
+        ->middleware(
+            'can:security.view-sessions'
+        )
+        ->name('security.sessions.index');
+
+    Route::delete(
+        '/security/sessions/{securitySession}',
+        [SecuritySessionController::class, 'destroy']
+    )
+        ->middleware([
+            'can:security.revoke-sessions',
+            'security.reconfirm',
+        ])
+        ->name('security.sessions.destroy');
+
+    Route::get(
+        '/security/backups',
+        [BackupController::class, 'index']
+    )
+        ->middleware(
+            'can:backups.view'
+        )
+        ->name('security.backups.index');
+
+    Route::post(
+        '/security/backups',
+        [BackupController::class, 'store']
+    )
+        ->middleware([
+            'can:backups.run',
+            'security.reconfirm',
+        ])
+        ->name('security.backups.store');
+
+    Route::get(
+        '/security/backups/{backupRun}/download',
+        [BackupController::class, 'download']
+    )
+        ->middleware([
+            'can:backups.download',
+            'security.reconfirm',
+        ])
+        ->name('security.backups.download');
+
+    Route::delete(
+        '/security/backups/{backupRun}',
+        [BackupController::class, 'destroy']
+    )
+        ->middleware([
+            'can:backups.delete',
+            'security.reconfirm',
+        ])
+        ->name('security.backups.destroy');
+
+    Route::get(
+        '/security/confirm',
+        [SecurityConfirmationController::class, 'create']
+    )
+        ->middleware(
+            'can:security.perform-sensitive-actions'
+        )
+        ->name(
+            'security.confirmation.create'
+        );
+
+    Route::post(
+        '/security/confirm',
+        [SecurityConfirmationController::class, 'store']
+    )
+        ->middleware(
+            'can:security.perform-sensitive-actions'
+        )
+        ->name(
+            'security.confirmation.store'
+        );
 
     /*
     |--------------------------------------------------------------------------
@@ -424,6 +605,124 @@ Route::middleware([
     )
         ->middleware('can:projects.manage-files')
         ->name('projects.files.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Internal Client Portal Management
+    |--------------------------------------------------------------------------
+    */
+
+    Route::put(
+        '/projects/{project}/client-portal',
+        [
+            ClientPortalProjectController::class,
+            'update',
+        ]
+    )
+        ->middleware(
+            'can:client-portal.manage'
+        )
+        ->name(
+            'projects.client-portal.update'
+        );
+
+    Route::get(
+        '/projects/{project}/client-portal/users',
+        [
+            ClientPortalUserController::class,
+            'index',
+        ]
+    )
+        ->middleware(
+            'can:client-portal.view'
+        )
+        ->name(
+            'projects.client-portal.users'
+        );
+
+    Route::post(
+        '/projects/{project}/client-portal/users',
+        [
+            ClientPortalUserController::class,
+            'store',
+        ]
+    )
+        ->middleware(
+            'can:client-portal.invite'
+        )
+        ->name(
+            'projects.client-portal.users.store'
+        );
+
+    Route::delete(
+        '/projects/{project}/client-portal/users/{clientUser}',
+        [
+            ClientPortalUserController::class,
+            'revoke',
+        ]
+    )
+        ->middleware(
+            'can:client-portal.revoke'
+        )
+        ->name(
+            'projects.client-portal.users.revoke'
+        );
+
+    Route::put(
+        '/projects/{project}/files/{projectFile}/client-sharing',
+        [
+            ClientPortalFileController::class,
+            'update',
+        ]
+    )
+        ->middleware(
+            'can:client-portal.share-files'
+        )
+        ->name(
+            'projects.client-portal.files.update'
+        );
+
+    Route::post(
+        '/projects/{project}/approvals/{approval}/submit-to-client',
+        [
+            ClientPortalApprovalController::class,
+            'store',
+        ]
+    )
+        ->middleware(
+            'can:client-portal.submit-approvals'
+        )
+        ->name(
+            'projects.client-portal.approvals.submit'
+        );
+
+    Route::put(
+        '/projects/{project}/tickets/{ticket}/client-visibility',
+        [
+            ClientPortalTicketController::class,
+            'update',
+        ]
+    )
+        ->middleware(
+            'can:client-portal.manage-ticket-visibility'
+        )
+        ->name(
+            'projects.client-portal.tickets.update'
+        );
+
+    Route::put(
+        '/projects/{project}/tickets/{ticket}/comments/{ticketComment}/client-visibility',
+        [
+            ClientPortalTicketController::class,
+            'updateComment',
+        ]
+    )
+        ->middleware(
+            'can:client-portal.manage-ticket-visibility'
+        )
+        ->name(
+            'projects.client-portal.ticket-comments.update'
+        );
 
     /*
     |--------------------------------------------------------------------------

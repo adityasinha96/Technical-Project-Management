@@ -6,12 +6,14 @@ use App\Concerns\LogsProjectActivity;
 use App\Enums\ActivityVisibility;
 use App\Enums\ApprovalStage;
 use App\Enums\ApprovalStatus;
+use App\Traits\AuditsSystemChanges;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProjectApproval extends Model
 {
     use LogsProjectActivity;
+    use AuditsSystemChanges;
 
     protected $fillable = [
         'project_id',
@@ -42,6 +44,20 @@ class ProjectApproval extends Model
         'client_feedback',
         'client_decided_at',
         'client_decided_by',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | System Audit Exclusions
+    |--------------------------------------------------------------------------
+    |
+    | The routine updated_at timestamp is excluded so audit records focus on
+    | meaningful approval and client-decision changes.
+    |
+    */
+
+    protected array $auditExclude = [
+        'updated_at',
     ];
 
     protected function casts(): array
@@ -76,7 +92,9 @@ class ProjectApproval extends Model
 
     public function project(): BelongsTo
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsTo(
+            Project::class
+        );
     }
 
     public function submittedBy(): BelongsTo

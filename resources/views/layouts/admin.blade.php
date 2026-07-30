@@ -519,6 +519,39 @@
                 </a>
             @endcan
 
+            {{-- Security Centre --}}
+            @can('security.view-control-centre')
+                <a
+                    href="{{ route('security.index') }}"
+                    class="mt-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition
+                        {{
+                            request()->routeIs('security.*')
+                                ? 'bg-white/10 text-white'
+                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                        }}"
+                >
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-300">
+                        <svg
+                            class="h-5 w-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M12 3l8 4v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V7l8-4z"/>
+                            <path d="M9 12l2 2 4-4"/>
+                        </svg>
+                    </span>
+
+                    <span
+                        x-show="!sidebarCollapsed"
+                        x-transition.opacity
+                    >
+                        Security Centre
+                    </span>
+                </a>
+            @endcan
+
             {{-- Future modules --}}
             <div class="mt-4 space-y-1">
                 <p
@@ -850,4 +883,3 @@
     @stack('scripts')
 </body>
 </html>
-

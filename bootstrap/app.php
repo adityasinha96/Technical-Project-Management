@@ -3,6 +3,9 @@
 use App\Http\Middleware\EnsureClientProjectAccess;
 use App\Http\Middleware\EnsureClientUserIsActive;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\RecordSecurityResponse;
+use App\Http\Middleware\RequireRecentSecurityConfirmation;
+use App\Http\Middleware\TrackSecuritySession;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -40,6 +43,15 @@ return Application::configure(
 
             'client.project' =>
                 EnsureClientProjectAccess::class,
+
+            'security.session' =>
+                TrackSecuritySession::class,
+
+            'security.reconfirm' =>
+                RequireRecentSecurityConfirmation::class,
+
+            'security.response' =>
+                RecordSecurityResponse::class,
         ]);
     })
     ->withExceptions(function (
@@ -52,3 +64,4 @@ return Application::configure(
         );
     })
     ->create();
+

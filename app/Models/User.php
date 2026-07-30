@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\AuditsSystemChanges;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -16,6 +17,7 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory;
     use HasRoles;
     use Notifiable;
+    use AuditsSystemChanges;
 
     protected $fillable = [
         'name',
@@ -31,6 +33,25 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | System audit exclusions
+    |--------------------------------------------------------------------------
+    |
+    | Credentials and frequently changing login/session fields must never be
+    | stored in system change-audit records.
+    |
+    */
+
+    protected array $auditExclude = [
+        'password',
+        'remember_token',
+        'last_seen_at',
+        'last_login_at',
+        'last_login_ip',
+        'updated_at',
     ];
 
     protected function casts(): array
@@ -217,3 +238,4 @@ class User extends Authenticatable implements MustVerifyEmail
         );
     }
 }
+

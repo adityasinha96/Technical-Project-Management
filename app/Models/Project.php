@@ -7,6 +7,7 @@ use App\Enums\ApprovalStage;
 use App\Enums\ApprovalStatus;
 use App\Enums\ProjectPriority;
 use App\Enums\ProjectStatus;
+use App\Traits\AuditsSystemChanges;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -23,6 +24,7 @@ class Project extends Model
     use HasFactory;
     use SoftDeletes;
     use LogsProjectActivity;
+    use AuditsSystemChanges;
 
     protected $fillable = [
         'project_code',
@@ -101,6 +103,22 @@ class Project extends Model
 
         'created_by',
         'updated_by',
+    ];
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | System Audit Exclusions
+    |--------------------------------------------------------------------------
+    |
+    | Routine timestamp and activity-marker changes are excluded so the
+    | system audit log focuses on meaningful project data changes.
+    |
+    */
+
+    protected array $auditExclude = [
+        'updated_at',
+        'last_activity_at',
     ];
 
     protected function casts(): array
@@ -769,4 +787,3 @@ class Project extends Model
             ->latest('created_at');
     }
 }
-

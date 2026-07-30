@@ -8,6 +8,7 @@ use App\Enums\PaymentKind;
 use App\Enums\PaymentMode;
 use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
+use App\Traits\AuditsSystemChanges;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Payment extends Model
 {
     use LogsProjectActivity;
+    use AuditsSystemChanges;
 
     protected $fillable = [
         'payment_number',
@@ -38,6 +40,20 @@ class Payment extends Model
         'voided_by',
         'voided_at',
         'void_reason',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | System Audit Exclusions
+    |--------------------------------------------------------------------------
+    |
+    | The routine updated_at timestamp is excluded so audit records focus on
+    | meaningful financial changes.
+    |
+    */
+
+    protected array $auditExclude = [
+        'updated_at',
     ];
 
     protected function casts(): array
@@ -66,12 +82,16 @@ class Payment extends Model
 
     public function project(): BelongsTo
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsTo(
+            Project::class
+        );
     }
 
     public function client(): BelongsTo
     {
-        return $this->belongsTo(Client::class);
+        return $this->belongsTo(
+            Client::class
+        );
     }
 
     public function proofFile(): BelongsTo
@@ -170,9 +190,13 @@ class Payment extends Model
     ): Builder {
         return $query->when(
             filled($search),
-            function (Builder $query) use ($search): void {
+            function (
+                Builder $query
+            ) use ($search): void {
                 $query->where(
-                    function (Builder $query) use ($search): void {
+                    function (
+                        Builder $query
+                    ) use ($search): void {
                         $query
                             ->where(
                                 'payment_number',
@@ -200,7 +224,9 @@ class Payment extends Model
                             )
                             ->orWhereHas(
                                 'client',
-                                function (Builder $query) use ($search): void {
+                                function (
+                                    Builder $query
+                                ) use ($search): void {
                                     $query
                                         ->where(
                                             'name',
@@ -247,3 +273,4 @@ class Payment extends Model
             : $this->status->label();
     }
 }
+

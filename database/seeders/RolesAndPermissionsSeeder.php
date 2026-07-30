@@ -249,6 +249,28 @@ class RolesAndPermissionsSeeder extends Seeder
             'client-portal.manage-ticket-visibility',
             'client-portal.communicate',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Phase 11 Security and Backup Administration
+            |--------------------------------------------------------------------------
+            */
+
+            'security.view-control-centre',
+            'security.view-audit-logs',
+            'security.view-login-history',
+            'security.view-sessions',
+            'security.revoke-sessions',
+            'security.view-incidents',
+            'security.manage-incidents',
+            'security.view-permission-history',
+            'security.perform-sensitive-actions',
+
+            'backups.view',
+            'backups.run',
+            'backups.download',
+            'backups.delete',
+
             /*
             |--------------------------------------------------------------------------
             | Settings
@@ -318,7 +340,8 @@ class RolesAndPermissionsSeeder extends Seeder
         | collection follow-ups, operational expenses and profitability reports.
         |
         | Project managers cannot delete expense records or manage expense
-        | categories.
+        | categories. They receive read-only access to the security control
+        | centre and security incident list.
         |
         */
 
@@ -580,3 +603,4 @@ class RolesAndPermissionsSeeder extends Seeder
             ->forgetCachedPermissions();
     }
 }
+

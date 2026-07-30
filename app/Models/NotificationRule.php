@@ -4,11 +4,14 @@ namespace App\Models;
 
 use App\Enums\NotificationRecipientStrategy;
 use App\Enums\NotificationSeverity;
+use App\Traits\AuditsSystemChanges;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class NotificationRule extends Model
 {
+    use AuditsSystemChanges;
+
     protected $fillable = [
         'rule_key',
         'name',
@@ -22,6 +25,20 @@ class NotificationRule extends Model
         'maximum_occurrences',
         'is_enabled',
         'configuration',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | System Audit Exclusions
+    |--------------------------------------------------------------------------
+    |
+    | The routine updated_at timestamp is excluded so audit records focus on
+    | meaningful notification rule configuration changes.
+    |
+    */
+
+    protected array $auditExclude = [
+        'updated_at',
     ];
 
     protected function casts(): array

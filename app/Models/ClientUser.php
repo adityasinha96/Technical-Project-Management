@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ClientUserStatus;
+use App\Traits\AuditsSystemChanges;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,6 +21,7 @@ class ClientUser extends Authenticatable implements
     use HasFactory;
     use Notifiable;
     use SoftDeletes;
+    use AuditsSystemChanges;
 
     protected $fillable = [
         'client_id',
@@ -38,6 +40,25 @@ class ClientUser extends Authenticatable implements
     protected $hidden = [
         'password',
         'remember_token',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | System audit exclusions
+    |--------------------------------------------------------------------------
+    |
+    | Credentials and frequently changing authentication fields must not be
+    | stored in system change-audit records.
+    |
+    */
+
+    protected array $auditExclude = [
+        'password',
+        'remember_token',
+        'last_seen_at',
+        'last_login_at',
+        'last_login_ip',
+        'updated_at',
     ];
 
     protected function casts(): array
@@ -156,3 +177,4 @@ class ClientUser extends Authenticatable implements
         );
     }
 }
+

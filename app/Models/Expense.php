@@ -7,6 +7,7 @@ use App\Enums\ActivityVisibility;
 use App\Enums\ExpenseScope;
 use App\Enums\ExpenseStatus;
 use App\Enums\PaymentMode;
+use App\Traits\AuditsSystemChanges;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
 class Expense extends Model
 {
     use LogsProjectActivity;
+    use AuditsSystemChanges;
 
     protected $fillable = [
         'expense_number',
@@ -47,6 +49,20 @@ class Expense extends Model
         'void_reason',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | System Audit Exclusions
+    |--------------------------------------------------------------------------
+    |
+    | The routine updated_at timestamp is excluded so audit records focus on
+    | meaningful financial changes.
+    |
+    */
+
+    protected array $auditExclude = [
+        'updated_at',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -74,7 +90,9 @@ class Expense extends Model
 
     public function project(): BelongsTo
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsTo(
+            Project::class
+        );
     }
 
     public function category(): BelongsTo
@@ -174,9 +192,13 @@ class Expense extends Model
     ): Builder {
         return $query->when(
             filled($search),
-            function (Builder $query) use ($search): void {
+            function (
+                Builder $query
+            ) use ($search): void {
                 $query->where(
-                    function (Builder $query) use ($search): void {
+                    function (
+                        Builder $query
+                    ) use ($search): void {
                         $query
                             ->where(
                                 'expense_number',
@@ -254,7 +276,9 @@ class Expense extends Model
 
         return Storage::disk(
             $this->receipt_disk
-        )->url($this->receipt_path);
+        )->url(
+            $this->receipt_path
+        );
     }
 
     public function getFormattedReceiptSizeAttribute(): ?string
@@ -280,3 +304,4 @@ class Expense extends Model
         return $this->receipt_size . ' Bytes';
     }
 }
+

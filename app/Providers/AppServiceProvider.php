@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Listeners\AuthenticationEventSubscriber;
 use App\Models\Project;
 use App\Models\User;
 use App\Observers\ProjectObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
@@ -22,6 +24,16 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Authentication Event Subscriber
+        |--------------------------------------------------------------------------
+        */
+
+        Event::subscribe(
+            AuthenticationEventSubscriber::class
+        );
+
         /*
         |--------------------------------------------------------------------------
         | Client Login Rate Limiting

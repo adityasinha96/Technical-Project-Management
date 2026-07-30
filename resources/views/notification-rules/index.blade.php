@@ -20,7 +20,7 @@
         </section>
 
         <section class="grid gap-5 xl:grid-cols-2">
-            @foreach ($rules as $rule)
+            @forelse ($rules as $rule)
                 <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div class="flex items-start justify-between gap-4">
                         <div>
@@ -188,7 +188,32 @@
                         </button>
                     </form>
                 </article>
-            @endforeach
+            @empty
+                <article class="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm xl:col-span-2">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                        <svg
+                            class="h-7 w-7"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M12 8v4l3 2"/>
+                            <circle cx="12" cy="12" r="9"/>
+                            <path d="M4 4l2 2M20 4l-2 2"/>
+                        </svg>
+                    </div>
+
+                    <h2 class="mt-4 text-xl font-black text-slate-950">
+                        No reminder rules found
+                    </h2>
+
+                    <p class="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
+                        The page is working, but the notification rules table does not currently contain any reminder-rule records. Run the notification-rule seeder or create the default rules before configuring them here.
+                    </p>
+                </article>
+            @endforelse
         </section>
     </div>
 @endsection
+

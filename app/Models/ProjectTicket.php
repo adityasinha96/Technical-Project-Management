@@ -6,6 +6,7 @@ use App\Enums\TicketPriority;
 use App\Enums\TicketSource;
 use App\Enums\TicketStatus;
 use App\Enums\TicketType;
+use App\Traits\AuditsSystemChanges;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ProjectTicket extends Model
 {
     use SoftDeletes;
+    use AuditsSystemChanges;
 
     protected $fillable = [
         'ticket_number',
@@ -76,6 +78,25 @@ class ProjectTicket extends Model
 
         'created_by',
         'updated_by',
+    ];
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | System Audit Exclusions
+    |--------------------------------------------------------------------------
+    |
+    | High-frequency reply and activity timestamps are excluded so the audit
+    | log focuses on meaningful ticket, SLA, assignment, and resolution
+    | changes.
+    |
+    */
+
+    protected array $auditExclude = [
+        'last_activity_at',
+        'last_reply_at',
+        'client_last_replied_at',
+        'updated_at',
     ];
 
     protected function casts(): array
