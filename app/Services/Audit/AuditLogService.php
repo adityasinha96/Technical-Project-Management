@@ -147,11 +147,10 @@ class AuditLogService
                         ),
                 ];
 
-                $entryHash =
-                    $this->hashPayload(
-                        $payload
-                    );
-
+                /*
+                * Insert the entry first so the hash is calculated from
+                * the exact values persisted by the database.
+                */
                 $auditLog =
                     AuditLog::query()->create([
                         ...$payload,
@@ -160,8 +159,42 @@ class AuditLogService
                             $occurredAt,
 
                         'entry_hash' =>
+                            str_repeat('0', 64),
+                    ]);
+
+                $auditLog->refresh();
+
+                $entryHash =
+                    $this->hashPayload(
+                        $this->payloadFromLog(
+                            $auditLog
+                        )
+                    );
+
+                /*
+                * Raw query is intentional because AuditLog model
+                * correctly prevents normal updates.
+                */
+                DB::table(
+                    $auditLog->getTable()
+                )
+                    ->where(
+                        'id',
+                        $auditLog->getKey()
+                    )
+                    ->update([
+                        'entry_hash' =>
                             $entryHash,
                     ]);
+
+                $auditLog->forceFill([
+                    'entry_hash' =>
+                        $entryHash,
+                ]);
+
+                $auditLog->syncOriginalAttribute(
+                    'entry_hash'
+                );
 
                 $head->update([
                     'last_sequence' =>

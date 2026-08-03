@@ -96,7 +96,6 @@ it('creates chained immutable audit logs', function () {
         AuditIntegrityService::class
     )->verify();
 
-    dump($result);
 
     expect(
         $result['valid']
